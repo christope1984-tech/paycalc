@@ -1,0 +1,2592 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>파트타임 급여계산기</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:#f1f5f9;color:#1e293b;font-size:14px;-webkit-font-smoothing:antialiased;}
+body{min-height:100vh;min-height:100dvh;padding-bottom:env(safe-area-inset-bottom);}
+input,button,select{font-family:inherit;-webkit-appearance:none;border-radius:0;}
+input:focus,select:focus,button:focus{outline:none;}
+
+.hdr{background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#fff;padding:16px 16px 0;padding-top:calc(16px + env(safe-area-inset-top));position:sticky;top:0;z-index:50;box-shadow:0 4px 16px rgba(15,23,42,.15);}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.hdr-title-wrap{display:flex;align-items:center;gap:9px;}
+.hdr-mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#10b981 0%,#059669 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(16,185,129,.35),inset 0 1px 0 rgba(255,255,255,.15);position:relative;flex-shrink:0;}
+.hdr-mark::after{content:'';position:absolute;inset:1px;border-radius:7px;border:1px solid rgba(255,255,255,.08);pointer-events:none;}
+.hdr-mark svg{width:15px;height:15px;color:#fff;filter:drop-shadow(0 1px 1px rgba(0,0,0,.15));}
+.hdr-title{margin:0;display:flex;align-items:baseline;gap:6px;line-height:1;}
+.hdr-title-pre{font-size:12px;font-weight:300;color:#94a3b8;letter-spacing:.4px;font-feature-settings:'kern';}
+.hdr-title-main{font-size:19px;font-weight:800;letter-spacing:-.6px;background:linear-gradient(135deg,#fff 0%,#cbd5e1 50%,#a7f3d0 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-shadow:0 1px 0 rgba(0,0,0,.08);}
+.hdr-reset{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#cbd5e1;font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;}
+.hdr-reset:active{background:rgba(255,255,255,.15);}
+
+.tabs{display:flex;gap:4px;margin:8px -8px 0;padding:0 8px;background:transparent;border-bottom:1px solid rgba(255,255,255,.05);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:1;min-width:0;padding:9px 4px 11px;border:1px solid rgba(255,255,255,.06);border-bottom:none;border-radius:10px 10px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(15,23,42,.25));color:#64748b;font-size:11px;font-weight:700;cursor:pointer;position:relative;transition:all .2s cubic-bezier(.4,0,.2,1);letter-spacing:-.2px;white-space:nowrap;opacity:.5;}
+.tab:active{opacity:.85;}
+.tab.on{background:linear-gradient(180deg,rgba(16,185,129,.22) 0%,rgba(5,150,105,.10) 65%,rgba(15,23,42,.6) 100%);color:#10b981;opacity:1;border-color:rgba(16,185,129,.4);font-weight:800;z-index:2;box-shadow:0 -3px 10px rgba(16,185,129,.18),0 2px 0 0 rgba(15,23,42,.6);}
+.tab.on::after{content:'';position:absolute;left:6%;right:6%;bottom:-1px;height:3px;background:linear-gradient(90deg,#34d399,#10b981,#34d399);border-radius:2px 2px 0 0;box-shadow:0 0 10px rgba(16,185,129,.6);}
+.tab-icon{font-size:14px;margin-right:3px;}
+
+.tab-pane{display:none;}
+.tab-pane.on{display:block;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* 사업장 옵션 */
+.options-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+.options-row{margin-bottom:11px;}
+.options-row:last-child{margin-bottom:0;}
+.options-label{font-size:10px;font-weight:800;color:#64748b;letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px;display:block;}
+.options-toggle{display:flex;background:#f1f5f9;border-radius:9px;padding:3px;gap:3px;}
+.options-toggle button{flex:1;padding:9px 6px;background:transparent;border:none;color:#64748b;font-size:12px;font-weight:700;cursor:pointer;border-radius:7px;transition:all .18s;}
+.options-toggle button.on{background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 2px 6px rgba(16,185,129,.3);}
+.options-toggle.days button{font-size:11.5px;}
+.options-toggle.days button.on{background:linear-gradient(135deg,#3b82f6,#2563eb);box-shadow:0 2px 6px rgba(59,130,246,.3);}
+.options-hint{font-size:10px;color:#94a3b8;margin-top:5px;line-height:1.4;font-weight:600;}
+
+.container{padding:14px 12px 24px;max-width:520px;margin:0 auto;}
+
+.card{background:#fff;border-radius:14px;border:1px solid #e2e8f0;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+.card-h{padding:13px 16px 11px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.card-t{font-size:13px;font-weight:800;color:#0f172a;letter-spacing:-.2px;display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.card-t::before{content:'';width:3px;height:14px;background:linear-gradient(180deg,#10b981,#059669);border-radius:2px;}
+.card-sub{font-size:10px;color:#94a3b8;font-weight:700;text-align:right;}
+.card-b{padding:14px 16px;}
+
+.wage-row{display:flex;align-items:center;gap:10px;}
+.wage-input-wrap{flex:1;position:relative;}
+.wage-input{width:100%;padding:13px 38px 13px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:17px;font-weight:800;color:#0f172a;background:#fff;text-align:right;letter-spacing:-.3px;transition:all .15s;}
+.wage-input:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12);}
+.wage-suffix{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:700;color:#64748b;pointer-events:none;}
+.wage-presets{display:flex;gap:5px;margin-top:9px;flex-wrap:wrap;}
+.wage-preset{flex:1;min-width:0;padding:7px 4px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:11px;font-weight:700;color:#475569;cursor:pointer;transition:all .15s;}
+.wage-preset:active{background:#10b981;color:#fff;border-color:#10b981;}
+
+.day-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;margin-bottom:9px;overflow:hidden;transition:all .2s;}
+.day-card.work{border-color:#bbf7d0;background:linear-gradient(180deg,#f0fdf4 0%,#fff 35%);}
+.day-card.off{background:#f8fafc;}
+.day-h{display:flex;align-items:center;padding:11px 14px;cursor:pointer;user-select:none;gap:10px;}
+.day-label{display:flex;align-items:center;flex:1;gap:0;min-width:0;}
+.day-name{font-size:14px;font-weight:800;color:#0f172a;width:38px;flex-shrink:0;}
+.day-name.sat{color:#3b82f6;}
+.day-name.sun{color:#ef4444;}
+.day-summary{font-size:11.5px;color:#64748b;font-weight:600;flex:1;text-align:center;padding:0 6px;letter-spacing:-.2px;}
+.day-summary.has-work{color:#059669;font-weight:700;}
+.day-toggle{position:relative;width:64px;height:28px;background:#e2e8f0;border-radius:14px;transition:all .2s;flex-shrink:0;}
+.day-toggle::before{content:'출근';position:absolute;top:50%;right:8px;transform:translateY(-50%);font-size:10.5px;font-weight:800;color:#64748b;letter-spacing:-.3px;transition:all .2s;pointer-events:none;line-height:1;white-space:nowrap;}
+.day-toggle::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;background:#fff;border-radius:50%;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.15);}
+.day-card.work .day-toggle{background:linear-gradient(135deg,#10b981,#059669);}
+.day-card.work .day-toggle::before{content:'근무';right:auto;left:8px;color:#fff;}
+.day-card.work .day-toggle::after{left:38px;}
+
+.day-body{padding:0 14px 14px;display:none;}
+.day-card.work .day-body{display:block;}
+.time-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.time-field{display:flex;flex-direction:column;gap:4px;}
+.time-field-label{font-size:10px;font-weight:700;color:#64748b;letter-spacing:.3px;text-transform:uppercase;padding-left:2px;}
+.time-input{padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;font-weight:700;color:#0f172a;background:#fff;width:100%;transition:all .15s;font-variant-numeric:tabular-nums;}
+.time-input:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12);}
+.time-picker{display:flex;align-items:center;background:#fff;border:1.5px solid #e2e8f0;border-radius:9px;transition:all .15s;padding:0 6px;height:42px;}
+.time-picker:focus-within{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12);}
+.time-part{flex:1;min-width:0;width:100%;padding:0 2px;font-size:16px;font-weight:800;color:#0f172a;background:transparent;border:none;outline:none;text-align:center;font-variant-numeric:tabular-nums;font-family:inherit;-moz-appearance:textfield;}
+.time-part::-webkit-outer-spin-button,.time-part::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.time-colon{font-size:16px;font-weight:800;color:#94a3b8;padding:0 2px;flex-shrink:0;line-height:1;}
+.brk-row{display:flex;align-items:center;gap:6px;}
+.brk-label{font-size:11px;font-weight:700;color:#475569;flex-shrink:0;}
+.brk-input{width:54px;flex-shrink:0;padding:8px 8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-weight:700;color:#0f172a;background:#fff;text-align:right;font-variant-numeric:tabular-nums;}
+.brk-input:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12);}
+.brk-suffix{font-size:11px;font-weight:700;color:#64748b;flex-shrink:0;margin-right:2px;}
+.brk-presets{display:flex;gap:3px;flex:1;}
+.brk-preset{flex:1;min-width:0;padding:7px 2px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:10.5px;font-weight:700;color:#475569;cursor:pointer;font-variant-numeric:tabular-nums;}
+.brk-preset:active{background:#10b981;color:#fff;border-color:#10b981;}
+
+.day-meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0;font-size:11px;}
+.day-meta-item{display:flex;flex-direction:column;gap:2px;}
+.day-meta-label{font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:.3px;text-transform:uppercase;}
+.day-meta-val{font-size:12px;font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums;}
+.day-meta-val.night{color:#8b5cf6;}
+.day-meta-val.ot{color:#f59e0b;}
+
+/* 격주 토요일 옵션 (토요일 카드에만) */
+.sat-biweekly-row{margin-top:10px;padding:9px 11px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1.5px dashed #93c5fd;border-radius:8px;}
+.sat-biweekly-label{font-size:11px;font-weight:800;color:#1e40af;margin-bottom:6px;display:flex;align-items:center;gap:4px;letter-spacing:-.2px;}
+.sat-biweekly-label small{font-size:9.5px;color:#3b82f6;font-weight:600;letter-spacing:-.2px;margin-left:auto;}
+.sat-week-toggle{display:flex;gap:3px;background:rgba(255,255,255,.7);border-radius:8px;padding:3px;}
+.sat-week-toggle button{flex:1;padding:9px 6px;border:none;background:transparent;color:#64748b;font-size:12px;font-weight:800;border-radius:6px;cursor:pointer;letter-spacing:-.3px;transition:all .15s;}
+.sat-week-toggle button.on{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;box-shadow:0 2px 6px rgba(59,130,246,.35);}
+.day-summary-biweekly{font-weight:900;margin-left:5px;padding:2px 8px;border-radius:6px;font-size:11px;border:1.5px solid;letter-spacing:-.2px;display:inline-block;line-height:1.3;}
+.day-summary-biweekly.biweekly{color:#1e40af;background:#dbeafe;border-color:#3b82f6;}
+.day-summary-biweekly.weekly{color:#475569;background:#f1f5f9;border-color:#cbd5e1;}
+
+/* 결과 카드 (주급+월급 강조) */
+.result-card{background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#fff;border-radius:18px;padding:20px 18px 20px;margin-top:14px;box-shadow:0 12px 32px rgba(15,23,42,.22);position:relative;overflow:hidden;}
+.result-card::before{content:'';position:absolute;top:-50%;right:-30%;width:280px;height:280px;background:radial-gradient(circle,rgba(16,185,129,.22) 0%,transparent 70%);pointer-events:none;}
+.result-card::after{content:'';position:absolute;bottom:-40%;left:-30%;width:260px;height:260px;background:radial-gradient(circle,rgba(245,158,11,.12) 0%,transparent 70%);pointer-events:none;}
+
+.result-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:relative;z-index:2;}
+.result-title{font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:1.2px;text-transform:uppercase;}
+.result-elig{font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px;letter-spacing:.4px;}
+.result-elig.yes{background:rgba(16,185,129,.18);color:#10b981;border:1px solid rgba(16,185,129,.35);}
+.result-elig.no{background:rgba(148,163,184,.12);color:#94a3b8;border:1px solid rgba(148,163,184,.2);}
+
+.result-amounts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;position:relative;z-index:2;}
+.amount-block{padding:14px 13px 15px;border-radius:14px;border:1.5px solid;position:relative;overflow:hidden;}
+.amount-block.weekly{background:linear-gradient(135deg,rgba(16,185,129,.18) 0%,rgba(16,185,129,.04) 100%);border-color:rgba(16,185,129,.4);}
+.amount-block.monthly{background:linear-gradient(135deg,rgba(245,158,11,.16) 0%,rgba(245,158,11,.03) 100%);border-color:rgba(245,158,11,.4);}
+.amount-label{font-size:9px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:4px;}
+.amount-block.weekly .amount-label{color:#10b981;}
+.amount-block.monthly .amount-label{color:#f59e0b;}
+.amount-label-tag{font-size:8.5px;background:rgba(255,255,255,.08);color:#cbd5e1;padding:2px 6px;border-radius:5px;letter-spacing:.3px;font-weight:700;text-transform:none;}
+.amount-value{font-size:26px;font-weight:900;letter-spacing:-1px;line-height:1.05;font-variant-numeric:tabular-nums;font-feature-settings:'tnum';}
+.amount-block.weekly .amount-value{background:linear-gradient(135deg,#10b981 0%,#34d399 60%,#a7f3d0 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.amount-block.monthly .amount-value{background:linear-gradient(135deg,#f59e0b 0%,#fbbf24 60%,#fde68a 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.amount-suffix{font-size:13px;color:#cbd5e1;margin-left:2px;font-weight:700;-webkit-text-fill-color:#cbd5e1;}
+.amount-sub{font-size:9.5px;color:#64748b;margin-top:4px;font-weight:600;letter-spacing:.2px;}
+
+.result-meta-line{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:9px;font-size:11px;color:#94a3b8;font-weight:600;margin-bottom:14px;position:relative;z-index:2;gap:8px;flex-wrap:wrap;}
+.result-meta-line strong{color:#e2e8f0;font-weight:700;}
+
+.result-divider{font-size:9px;font-weight:800;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:9px;display:flex;align-items:center;gap:8px;position:relative;z-index:2;}
+.result-divider::before,.result-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(148,163,184,.25),transparent);}
+
+.result-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;position:relative;z-index:2;}
+.result-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:10px 11px;}
+.result-item-label{font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px;}
+.result-item-val{font-size:13.5px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-.2px;}
+.result-item-val.zero{color:#475569;}
+.result-item-sub{font-size:9.5px;color:#64748b;margin-top:2px;font-weight:600;}
+
+.info-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 13px;font-size:11px;line-height:1.65;color:#065f46;margin-top:12px;}
+.info-box strong{color:#047857;font-weight:800;}
+.info-box .info-item{display:flex;gap:6px;align-items:flex-start;}
+.info-box .info-item + .info-item{margin-top:4px;}
+.info-box .info-item::before{content:'•';color:#10b981;font-weight:900;flex-shrink:0;}
+.info-yellow{background:#fef9c3;border-color:#fde68a;color:#713f12;}
+.info-yellow strong{color:#92400e;}
+.info-yellow .info-item::before{color:#f59e0b;}
+.info-blue{background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a;}
+.info-blue strong{color:#1e40af;}
+.info-blue .info-item::before{color:#3b82f6;}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:#0f172a;color:#fff;padding:11px 18px;border-radius:10px;font-size:12px;font-weight:700;z-index:200;opacity:0;transition:all .25s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw;text-align:center;line-height:1.5;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.footer{text-align:center;font-size:10px;color:#94a3b8;padding:12px 16px 16px;font-weight:600;}
+.footer span{color:#10b981;font-weight:800;}
+
+/* 폼 공통 */
+.fg{margin-bottom:14px;}
+.fl{font-size:11px;font-weight:700;color:#374151;margin-bottom:5px;display:block;}
+.fl-sub{font-size:9.5px;color:#94a3b8;font-weight:600;margin-left:4px;}
+.fi{padding:11px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;color:#0f172a;background:#fff;font-family:inherit;outline:none;transition:all .15s;width:100%;font-variant-numeric:tabular-nums;}
+.fi:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12);}
+.fi.amount{font-size:18px;font-weight:800;text-align:right;}
+.mg2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+/* 포괄임금 전용 */
+.pi-info-banner{background:linear-gradient(135deg,#fef3c7,#fef9c3);border:1.5px solid #fde68a;border-radius:10px;padding:11px 13px;font-size:11.5px;color:#92400e;margin-bottom:14px;line-height:1.65;}
+.pi-info-banner strong{font-weight:800;}
+
+.sched-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.sched-btn{flex:1;min-width:0;padding:11px 6px;border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;color:#64748b;line-height:1.3;transition:all .15s;text-align:center;}
+.sched-btn.on{border-color:#3b82f6;background:#eff6ff;color:#1e40af;}
+.sched-btn-sub{font-size:9.5px;font-weight:600;opacity:.85;display:block;margin-top:2px;}
+
+.section-divider{border-top:1px solid #e2e8f0;margin-top:14px;padding-top:14px;}
+.section-title{font-size:12px;font-weight:800;color:#0f172a;margin-bottom:9px;display:flex;align-items:center;gap:5px;}
+.brk-auto-tag{font-size:9px;color:#10b981;font-weight:700;background:#ecfdf5;padding:1px 6px;border-radius:6px;margin-left:4px;}
+.brk-info{font-size:10px;color:#059669;margin-top:5px;line-height:1.5;background:#f0fdf4;border-left:3px solid #10b981;padding:6px 9px;border-radius:4px;}
+.alt-info{font-size:10.5px;color:#1e40af;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px 10px;margin-bottom:10px;line-height:1.5;}
+
+/* 결과 영역 (포괄임금/일할/주급명세서/월급명세서/일할명세서) */
+#pi-result,#prorate-result,#week-statement-wrap,#month-statement-wrap,#prorate-statement-wrap{display:none;}
+#pi-result.show,#prorate-result.show{display:block;}
+#week-statement-wrap.show,#month-statement-wrap.show,#prorate-statement-wrap.show{display:block;margin-top:14px;}
+
+/* 월급 일할 - 방식 선택 카드 */
+.pr-method-card{cursor:pointer;position:relative;transition:all .2s;}
+.pr-method-card.selected{box-shadow:inset 0 0 0 2.5px currentColor;}
+.pr-method-card.blue.selected{box-shadow:inset 0 0 0 2.5px #2563eb;}
+.pr-method-card.green.selected{box-shadow:inset 0 0 0 2.5px #10b981;}
+.pr-method-card.amber.selected{box-shadow:inset 0 0 0 2.5px #f59e0b;}
+.pr-method-check{margin-left:auto;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;background:#e2e8f0;color:#fff;transition:all .2s;flex-shrink:0;}
+.pr-method-card.selected .pr-method-check{transform:scale(1);}
+.pr-method-card.blue.selected .pr-method-check{background:#2563eb;}
+.pr-method-card.green.selected .pr-method-check{background:#10b981;}
+.pr-method-card.amber.selected .pr-method-check{background:#f59e0b;}
+.pr-method-tip{padding:11px 16px;background:linear-gradient(135deg,#fef3c7,#fef9c3);font-size:11.5px;color:#92400e;font-weight:700;text-align:center;border-bottom:1px solid #fde68a;letter-spacing:-.2px;}
+.pr-method-tip strong{color:#78350f;font-weight:800;}
+
+/* 주급 명세서 */
+.ws-namebanner{padding:18px 16px 16px;background:linear-gradient(135deg,#f8fafc 0%,#f0fdf4 100%);border-bottom:2px solid #e2e8f0;text-align:center;}
+.ws-name{font-size:26px;font-weight:900;background:linear-gradient(135deg,#10b981 0%,#059669 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.8px;line-height:1.1;}
+.ws-namesuffix{font-size:13px;font-weight:700;color:#64748b;margin-left:5px;letter-spacing:-.3px;}
+.options-label-sub{font-size:9px;color:#94a3b8;letter-spacing:0;margin-left:4px;font-weight:600;text-transform:none;}
+.options-input{width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;color:#0f172a;background:#fff;font-family:inherit;outline:none;transition:all .15s;font-weight:700;}
+.options-input:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12);}
+
+/* 주급 명세서 */
+.ws-info{padding:13px 16px;border-bottom:1px solid #f1f5f9;background:#fafbfc;}
+.ws-info-title{font-size:11px;font-weight:800;color:#475569;letter-spacing:.3px;margin-bottom:8px;}
+.ws-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 14px;font-size:11.5px;}
+.ws-info-row{display:flex;justify-content:space-between;align-items:center;gap:6px;}
+.ws-info-row .ws-info-label{color:#64748b;font-weight:600;font-size:11px;}
+.ws-info-row .ws-info-value{color:#0f172a;font-weight:800;font-variant-numeric:tabular-nums;}
+.ws-totals{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 16px;background:linear-gradient(135deg,#f0fdf4 0%,#fffbeb 100%);border-bottom:1px solid #f1f5f9;}
+.ws-total-block{padding:12px 13px;border-radius:11px;border:1.5px solid;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+.ws-total-block.weekly{border-color:#bbf7d0;}
+.ws-total-block.monthly{border-color:#fde68a;}
+.ws-total-label{font-size:9.5px;font-weight:800;letter-spacing:.4px;margin-bottom:5px;text-transform:uppercase;}
+.ws-total-block.weekly .ws-total-label{color:#059669;}
+.ws-total-block.monthly .ws-total-label{color:#d97706;}
+.ws-total-val{font-size:20px;font-weight:900;letter-spacing:-.6px;font-variant-numeric:tabular-nums;line-height:1.1;}
+.ws-total-block.weekly .ws-total-val{color:#10b981;}
+.ws-total-block.monthly .ws-total-val{color:#f59e0b;}
+.ws-breakdown-wrap{padding:14px 16px 16px;}
+
+.pi-rate-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:10px;margin-bottom:14px;}
+.pi-rate-card{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1.5px solid #bfdbfe;border-radius:10px;padding:12px 13px;}
+.pi-rate-label{font-size:9.5px;color:#1e40af;font-weight:800;letter-spacing:.3px;}
+.pi-rate-formula{font-size:9px;color:#3b82f6;margin:2px 0 5px;}
+.pi-rate-value{font-size:24px;font-weight:900;color:#2563eb;letter-spacing:-.5px;line-height:1.1;font-variant-numeric:tabular-nums;}
+.pi-rate-unit{font-size:10px;color:#64748b;margin-top:2px;}
+
+.pi-status-card{border-radius:10px;padding:11px 12px;border:1.5px solid;}
+.pi-status-card.legal{background:#f0fdf4;border-color:#bbf7d0;}
+.pi-status-card.illegal{background:#fef2f2;border-color:#fecaca;}
+.pi-status-text{font-size:12px;font-weight:800;}
+.pi-status-text.legal{color:#10b981;}
+.pi-status-text.illegal{color:#ef4444;}
+.pi-status-sub{font-size:9.5px;color:#64748b;margin-top:3px;}
+.pi-status-val{font-size:11.5px;color:#475569;margin-top:1px;font-variant-numeric:tabular-nums;}
+.pi-status-gap{font-size:11px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums;}
+
+.pi-analysis{background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:10px 12px;margin-bottom:12px;}
+.pi-analysis-title{font-size:10px;font-weight:800;color:#475569;letter-spacing:.3px;margin-bottom:5px;}
+.pi-analysis-row{font-size:11px;color:#475569;line-height:1.7;}
+.pi-analysis-row strong{color:#0f172a;}
+.pi-analysis-divider{border-top:1px dashed #cbd5e1;padding-top:4px;margin-top:4px;}
+
+.pi-breakdown{background:#fff;border:1.5px solid #e2e8f0;border-radius:11px;overflow:hidden;margin-bottom:12px;}
+.pi-breakdown-h{background:linear-gradient(135deg,#1e293b,#0f172a);color:#fff;padding:10px 14px;font-size:12.5px;font-weight:800;letter-spacing:.3px;}
+.pi-breakdown table{width:100%;border-collapse:collapse;font-size:11.5px;}
+.pi-breakdown th{padding:7px 8px;text-align:right;font-weight:700;font-size:9.5px;color:#64748b;border-bottom:2px solid #e2e8f0;background:#f8fafc;}
+.pi-breakdown th:first-child{text-align:left;padding-left:12px;}
+.pi-breakdown td{padding:9px 8px;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums;}
+.pi-breakdown td:first-child{text-align:left;font-weight:700;padding-left:12px;}
+.pi-breakdown td.muted{color:#64748b;}
+.pi-breakdown td.amt{font-weight:800;color:#0f172a;}
+.pi-breakdown tr.total{background:linear-gradient(135deg,#f0f9ff,#e0f2fe);font-weight:900;}
+.pi-breakdown tr.total td{padding:11px 8px;font-size:13px;color:#0f172a;}
+.pi-breakdown tr.total td:last-child{font-size:14.5px;color:#2563eb;padding-right:12px;}
+.pi-breakdown td.green,.pi-breakdown tr.green td:first-child{color:#10b981;}
+.pi-breakdown td.amber,.pi-breakdown tr.amber td:first-child{color:#f59e0b;}
+.pi-breakdown td.purple,.pi-breakdown tr.purple td:first-child{color:#8b5cf6;}
+
+.pi-summary-banner{padding:14px 18px;background:linear-gradient(135deg,#f0f9ff,#dbeafe);border:1.5px solid #93c5fd;border-radius:10px;font-size:17px;color:#1e40af;font-weight:800;margin-bottom:14px;letter-spacing:-.3px;line-height:1.4;}
+
+.copy-actions{display:flex;gap:8px;margin-bottom:12px;}
+.copy-btn{flex:1;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;padding:13px;font-size:13px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 12px rgba(16,185,129,.3);transition:all .15s;}
+.copy-btn:active{transform:translateY(1px);}
+.copy-btn-icon{font-size:15px;}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* 월급(월간 스케줄) 계산기 전용 */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.mo-info-banner{background:linear-gradient(135deg,#dbeafe,#bfdbfe);border:1.5px solid #93c5fd;border-radius:10px;padding:11px 13px;font-size:11.5px;color:#1e3a8a;margin-bottom:12px;line-height:1.65;}
+.mo-info-banner strong{font-weight:800;color:#1e40af;}
+
+.mo-month-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 14px;background:linear-gradient(135deg,#f8fafc,#f1f5f9);border-bottom:1px solid #e2e8f0;}
+.mo-nav-btn{background:#fff;border:1.5px solid #e2e8f0;width:34px;height:34px;border-radius:9px;font-size:16px;font-weight:800;color:#475569;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.mo-nav-btn:active{background:#10b981;color:#fff;border-color:#10b981;}
+.mo-nav-title{flex:1;text-align:center;font-size:15px;font-weight:800;color:#0f172a;letter-spacing:-.4px;}
+.mo-nav-title small{font-size:10px;color:#64748b;font-weight:600;letter-spacing:0;display:block;margin-top:1px;}
+
+.mo-cal-wrap{padding:10px 8px 12px;}
+.mo-cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:5px;}
+.mo-cal-dow{font-size:10px;font-weight:800;text-align:center;color:#64748b;padding:5px 0;letter-spacing:.3px;}
+.mo-cal-dow.sun{color:#ef4444;}
+.mo-cal-dow.sat{color:#3b82f6;}
+.mo-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.mo-cal-cell{aspect-ratio:1/1.05;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;padding:4px 3px;cursor:pointer;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;transition:all .15s;overflow:hidden;}
+.mo-cal-cell:active{transform:scale(.96);}
+.mo-cal-cell.empty{border-color:transparent;background:transparent;cursor:default;}
+.mo-cal-cell.work{background:linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%);border-color:#86efac;}
+.mo-cal-cell.work.long{background:linear-gradient(135deg,#dcfce7 0%,#bbf7d0 100%);border-color:#10b981;}
+.mo-cal-cell.holiday{background:#fef2f2;border-color:#fecaca;}
+.mo-cal-cell.holiday.work{background:linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%);}
+.mo-cal-cell.selected{border-color:#3b82f6;border-width:2px;box-shadow:0 0 0 2px rgba(59,130,246,.18);}
+.mo-cal-day{font-size:13px;font-weight:800;color:#0f172a;line-height:1;margin-bottom:2px;}
+.mo-cal-day.sun,.mo-cal-cell.holiday .mo-cal-day{color:#ef4444;}
+.mo-cal-day.sat{color:#3b82f6;}
+.mo-cal-cell.work .mo-cal-day{color:#065f46;}
+.mo-cal-hours{font-size:9.5px;font-weight:800;color:#059669;font-variant-numeric:tabular-nums;letter-spacing:-.3px;line-height:1;margin-top:1px;}
+.mo-cal-holiday-tag{position:absolute;top:1px;right:2px;font-size:7px;color:#ef4444;font-weight:800;letter-spacing:-.3px;line-height:1;}
+
+.mo-input-panel{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1.5px solid #93c5fd;border-radius:11px;padding:13px;margin:10px 0 4px;display:none;}
+.mo-input-panel.show{display:block;animation:slideDown .25s ease;}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.mo-input-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.mo-input-title{font-size:13px;font-weight:800;color:#1e40af;letter-spacing:-.3px;}
+.mo-input-title small{font-size:10px;color:#3b82f6;font-weight:700;margin-left:4px;}
+.mo-input-close{background:rgba(255,255,255,.6);border:none;width:24px;height:24px;border-radius:50%;font-size:14px;font-weight:800;color:#1e40af;cursor:pointer;line-height:1;}
+.mo-input-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;margin-bottom:8px;}
+.mo-input-time-field{background:#fff;border-radius:7px;padding:7px 8px;min-width:0;overflow:hidden;}
+.mo-input-time-label{font-size:9px;font-weight:800;color:#64748b;letter-spacing:.3px;text-transform:uppercase;margin-bottom:3px;}
+.mo-input-time-picker{display:flex;align-items:center;gap:1px;min-width:0;width:100%;}
+.mo-input-time-picker input{flex:1 1 0;min-width:0;width:0;border:none;background:transparent;outline:none;font-size:15px;font-weight:800;color:#0f172a;text-align:center;font-variant-numeric:tabular-nums;font-family:inherit;-moz-appearance:textfield;padding:1px 0;box-sizing:border-box;}
+.mo-input-time-picker input::-webkit-outer-spin-button,.mo-input-time-picker input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.mo-input-time-picker span{font-size:14px;font-weight:800;color:#94a3b8;flex-shrink:0;padding:0 1px;}
+.mo-input-brk-row{background:#fff;border-radius:7px;padding:7px 8px;margin-bottom:9px;display:flex;align-items:center;gap:6px;}
+.mo-input-brk-row .mo-input-time-label{margin-bottom:0;}
+.mo-input-brk-row input{flex:1;border:none;background:transparent;outline:none;font-size:13px;font-weight:800;color:#0f172a;text-align:right;font-variant-numeric:tabular-nums;font-family:inherit;padding:0 4px;-moz-appearance:textfield;}
+.mo-input-brk-row input::-webkit-outer-spin-button,.mo-input-brk-row input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.mo-input-brk-row .brk-suffix{font-size:10px;}
+.mo-input-presets{display:flex;gap:4px;}
+.mo-input-presets button{flex:1;background:rgba(255,255,255,.7);border:1px solid rgba(59,130,246,.25);border-radius:6px;padding:6px 4px;font-size:10px;font-weight:700;color:#1e40af;cursor:pointer;font-variant-numeric:tabular-nums;}
+.mo-input-presets button:active{background:#3b82f6;color:#fff;border-color:#3b82f6;}
+.mo-input-actions{display:flex;gap:6px;margin-top:10px;}
+.mo-input-actions button{flex:1;padding:9px;border-radius:8px;font-size:11.5px;font-weight:800;cursor:pointer;border:1.5px solid;}
+.mo-input-actions .btn-clear{background:#fff;border-color:#fecaca;color:#dc2626;}
+.mo-input-actions .btn-clear:active{background:#fef2f2;}
+.mo-input-actions .btn-save{background:linear-gradient(135deg,#3b82f6,#2563eb);border-color:#2563eb;color:#fff;}
+
+.mo-quick-actions{display:flex;gap:6px;padding:0 14px 12px;flex-wrap:wrap;}
+.mo-quick-btn{flex:1;min-width:0;padding:9px 6px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;font-size:10.5px;font-weight:700;color:#475569;cursor:pointer;letter-spacing:-.2px;}
+.mo-quick-btn:active{background:#10b981;color:#fff;border-color:#10b981;}
+
+.mo-summary{padding:12px 16px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-bottom:1px solid #f1f5f9;}
+.mo-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.mo-summary-item{background:#fff;border:1px solid #bbf7d0;border-radius:8px;padding:8px 6px;text-align:center;}
+.mo-summary-label{font-size:9px;font-weight:800;color:#065f46;letter-spacing:.3px;}
+.mo-summary-val{font-size:16px;font-weight:900;color:#10b981;font-variant-numeric:tabular-nums;letter-spacing:-.3px;margin-top:2px;}
+.mo-summary-val small{font-size:10px;font-weight:700;opacity:.7;}
+.pr-info-banner{background:linear-gradient(135deg,#eff6ff,#e0f2fe);border:1.5px solid #bae6fd;border-radius:10px;padding:11px 13px;font-size:11.5px;color:#075985;margin-bottom:14px;line-height:1.65;}
+.pr-info-banner strong{font-weight:800;color:#0369a1;}
+.pr-principle{margin-top:7px;padding:7px 10px;background:#fff;border-left:3px solid #10b981;border-radius:5px;font-size:10.5px;color:#065f46;line-height:1.6;}
+.pr-principle strong{color:#059669;}
+
+.pr-month-info{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;}
+.pr-month-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;text-align:center;}
+.pr-month-item.green{background:#f0fdf4;border-color:#bbf7d0;}
+.pr-month-item.blue{background:#eff6ff;border-color:#bfdbfe;}
+.pr-month-item.amber{background:#fffbeb;border-color:#fde68a;}
+.pr-month-label{font-size:9px;font-weight:800;letter-spacing:.3px;}
+.pr-month-item.green .pr-month-label{color:#047857;}
+.pr-month-item.blue .pr-month-label{color:#1e40af;}
+.pr-month-item.amber .pr-month-label{color:#92400e;}
+.pr-month-val{font-size:18px;font-weight:900;margin-top:2px;letter-spacing:-.3px;font-variant-numeric:tabular-nums;}
+.pr-month-item.green .pr-month-val{color:#059669;}
+.pr-month-item.blue .pr-month-val{color:#2563eb;}
+.pr-month-item.amber .pr-month-val{color:#d97706;}
+.pr-month-val small{font-size:11px;font-weight:700;opacity:.7;}
+
+.pr-halfday-check{display:flex;align-items:center;gap:6px;margin-top:6px;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;transition:all .15s;background:#f8fafc;border:1px solid #e2e8f0;color:#475569;}
+.pr-halfday-check.on{background:#fef3c7;border-color:#fde68a;color:#92400e;}
+.pr-halfday-check input{width:14px;height:14px;cursor:pointer;accent-color:#f59e0b;}
+.pr-halfday-check small{font-size:9px;opacity:.7;}
+
+.pr-sat-toggle{display:flex;background:#f1f5f9;border-radius:9px;padding:3px;gap:3px;}
+.pr-sat-toggle button{flex:1;padding:8px 10px;background:transparent;border:none;color:#64748b;font-size:11.5px;font-weight:700;cursor:pointer;border-radius:7px;transition:all .18s;}
+.pr-sat-toggle button.on{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;box-shadow:0 2px 6px rgba(59,130,246,.3);}
+
+.pr-htype-btns{display:flex;gap:6px;margin-bottom:8px;}
+.pr-htype-btn{flex:1;padding:8px 6px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;color:#64748b;transition:all .15s;}
+.pr-htype-btn.unpaid.on{border-color:#dc2626;background:#fef2f2;color:#dc2626;}
+.pr-htype-btn.paid.on{border-color:#10b981;background:#f0fdf4;color:#059669;}
+
+.pr-hol-add{display:flex;gap:6px;margin-bottom:8px;}
+.pr-hol-add input{flex:1;padding:9px 11px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;color:#0f172a;background:#fff;}
+.pr-hol-add button{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;}
+
+.pr-hol-list{display:flex;flex-wrap:wrap;gap:5px;padding:8px;background:#f8fafc;border-radius:7px;border:1px solid #e2e8f0;}
+.pr-hol-list:empty{display:none;}
+.pr-hol-tag{display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid;border-radius:6px;padding:4px 6px 4px 10px;font-size:11px;font-weight:700;}
+.pr-hol-tag.unpaid{border-color:#fecaca;color:#991b1b;}
+.pr-hol-tag.paid{border-color:#bbf7d0;color:#065f46;}
+.pr-hol-tag button{background:transparent;border:none;cursor:pointer;font-size:14px;color:#94a3b8;padding:0 0 0 2px;line-height:1;}
+.pr-hol-empty{font-size:10.5px;color:#94a3b8;padding:5px 0;font-weight:600;}
+
+.pr-htype-info{font-size:10.5px;line-height:1.6;border-left:3px solid;padding:7px 10px;border-radius:4px;margin-top:8px;}
+.pr-htype-info.unpaid{background:#fef2f2;border-color:#dc2626;color:#991b1b;}
+.pr-htype-info.paid{background:#f0fdf4;border-color:#10b981;color:#065f46;}
+.pr-htype-info strong{font-weight:800;}
+
+.pr-period-summary{margin-top:10px;padding:10px 12px;background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1px solid #bbf7d0;border-radius:8px;}
+.pr-period-summary-title{font-size:10px;color:#065f46;font-weight:800;margin-bottom:5px;}
+.pr-period-row{display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:#475569;margin-bottom:2px;}
+.pr-period-row strong{color:#0f172a;}
+.pr-period-row.amber{color:#92400e;}
+.pr-period-row.amber strong{color:#92400e;}
+.pr-period-row.red{color:#dc2626;}
+.pr-period-row.red strong{color:#dc2626;}
+.pr-period-row.green{color:#059669;}
+.pr-period-row.green strong{color:#059669;}
+.pr-period-divider{border-top:1px dashed #bbf7d0;padding-top:5px;margin-top:5px;display:flex;justify-content:space-between;color:#065f46;font-weight:800;}
+.pr-period-divider strong{color:#059669;font-size:13px;}
+.pr-period-quick{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;font-weight:700;color:#0f172a;border-top:1px solid #bbf7d0;padding-top:6px;margin-top:6px;}
+.pr-period-quick strong{color:#059669;}
+
+/* 일할 계산 결과 (3가지 방식) */
+.pr-daily-card{margin-bottom:12px;}
+.pr-daily-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.pr-daily-item{padding:10px 8px;border-radius:9px;text-align:center;border:1.5px solid;}
+.pr-daily-item.blue{background:linear-gradient(135deg,#eff6ff,#dbeafe);border-color:#bfdbfe;}
+.pr-daily-item.green{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-color:#bbf7d0;}
+.pr-daily-item.amber{background:linear-gradient(135deg,#fffbeb,#fef3c7);border-color:#fde68a;}
+.pr-daily-label{font-size:9px;font-weight:800;letter-spacing:.2px;}
+.pr-daily-item.blue .pr-daily-label{color:#1e40af;}
+.pr-daily-item.green .pr-daily-label{color:#065f46;}
+.pr-daily-item.amber .pr-daily-label{color:#92400e;}
+.pr-daily-formula{font-size:9px;margin:2px 0 4px;font-weight:600;}
+.pr-daily-item.blue .pr-daily-formula{color:#3b82f6;}
+.pr-daily-item.green .pr-daily-formula{color:#10b981;}
+.pr-daily-item.amber .pr-daily-formula{color:#d97706;}
+.pr-daily-val{font-size:14px;font-weight:900;letter-spacing:-.3px;font-variant-numeric:tabular-nums;line-height:1.1;}
+.pr-daily-item.blue .pr-daily-val{color:#2563eb;}
+.pr-daily-item.green .pr-daily-val{color:#10b981;}
+.pr-daily-item.amber .pr-daily-val{color:#f59e0b;}
+.pr-daily-unit{font-size:9px;color:#64748b;margin-top:2px;font-weight:600;}
+
+/* 3가지 방식 결과 */
+.pr-method-card{padding:14px 16px;border-bottom:1px solid #f1f5f9;}
+.pr-method-card:last-child{border-bottom:none;}
+.pr-method-card.blue{background:#eff6ff;}
+.pr-method-card.green{background:#f8fafc;}
+.pr-method-card.amber{background:#fffbeb;}
+.pr-method-h{display:flex;align-items:center;gap:6px;margin-bottom:5px;flex-wrap:wrap;}
+.pr-method-num{font-size:10px;font-weight:800;padding:3px 9px;border-radius:14px;color:#fff;}
+.pr-method-num.blue{background:#3b82f6;}
+.pr-method-num.green{background:#10b981;}
+.pr-method-num.amber{background:#f59e0b;}
+.pr-method-name{font-size:13px;font-weight:800;}
+.pr-method-card.blue .pr-method-name{color:#1e40af;}
+.pr-method-card.green .pr-method-name{color:#065f46;}
+.pr-method-card.amber .pr-method-name{color:#92400e;}
+.pr-method-tag{background:#dbeafe;color:#1e40af;font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;}
+.pr-method-desc{font-size:11px;line-height:1.6;margin-bottom:8px;}
+.pr-method-card.blue .pr-method-desc{color:#1e3a8a;}
+.pr-method-card.green .pr-method-desc{color:#047857;}
+.pr-method-card.amber .pr-method-desc{color:#78350f;}
+.pr-method-amount-row{display:flex;justify-content:space-between;align-items:flex-end;}
+.pr-method-formula{font-size:10px;font-weight:600;}
+.pr-method-card.blue .pr-method-formula{color:#3b82f6;}
+.pr-method-card.green .pr-method-formula{color:#10b981;}
+.pr-method-card.amber .pr-method-formula{color:#d97706;}
+.pr-method-val{font-size:22px;font-weight:900;letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1.1;}
+.pr-method-card.blue .pr-method-val{color:#2563eb;}
+.pr-method-card.green .pr-method-val{color:#10b981;}
+.pr-method-card.amber .pr-method-val{color:#f59e0b;}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* 도우미 (Wizard) 탭 */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.wiz-screen{display:none;}
+.wiz-screen.show{display:block;animation:wizSlideIn .4s cubic-bezier(.4,0,.2,1);}
+@keyframes wizSlideIn{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
+@keyframes wizSlideOut{from{opacity:1;transform:translateX(0);}to{opacity:0;transform:translateX(-40px);}}
+
+.wiz-intro{text-align:center;padding:40px 22px 32px;background:linear-gradient(135deg,#f0fdf4 0%,#ecfdf5 40%,#f0f9ff 100%);border-radius:18px;border:1.5px solid #d1fae5;box-shadow:0 8px 24px rgba(16,185,129,.08);}
+.wiz-intro-icon{font-size:62px;margin-bottom:14px;display:inline-block;animation:wizBounce 2s ease infinite;filter:drop-shadow(0 4px 12px rgba(16,185,129,.25));}
+@keyframes wizBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.wiz-intro-title{font-size:25px;font-weight:900;letter-spacing:-.8px;background:linear-gradient(135deg,#047857 0%,#10b981 50%,#34d399 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px;line-height:1.15;}
+.wiz-intro-desc{font-size:13px;color:#475569;margin-bottom:24px;line-height:1.65;font-weight:600;letter-spacing:-.2px;}
+.wiz-intro-desc strong{color:#059669;font-weight:800;}
+.wiz-intro-features{display:flex;flex-direction:column;gap:7px;margin-bottom:26px;text-align:left;background:rgba(255,255,255,.7);border-radius:11px;padding:13px 14px;}
+.wiz-intro-feature{font-size:12px;font-weight:700;color:#047857;display:flex;align-items:center;gap:7px;letter-spacing:-.2px;}
+.wiz-start-btn{background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;border:none;border-radius:14px;padding:16px 30px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 10px 28px rgba(16,185,129,.38),0 2px 4px rgba(16,185,129,.2);display:inline-flex;align-items:center;justify-content:center;gap:7px;letter-spacing:-.3px;width:100%;transition:all .15s;}
+.wiz-start-btn:active{transform:translateY(2px);box-shadow:0 4px 12px rgba(16,185,129,.3);}
+
+.wiz-step-header{display:flex;align-items:center;gap:10px;padding:6px 2px 14px;}
+.wiz-back-btn{background:#f1f5f9;border:1.5px solid #e2e8f0;width:38px;height:38px;border-radius:10px;font-size:18px;font-weight:800;color:#475569;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;}
+.wiz-back-btn:active{background:#e2e8f0;}
+.wiz-progress{flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;}
+.wiz-progress-bar{height:100%;background:linear-gradient(90deg,#10b981,#059669);border-radius:3px;transition:width .4s cubic-bezier(.4,0,.2,1);}
+.wiz-step-num{font-size:11px;font-weight:800;color:#059669;letter-spacing:.4px;font-variant-numeric:tabular-nums;flex-shrink:0;background:#f0fdf4;padding:4px 9px;border-radius:6px;}
+
+.wiz-q-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:22px 18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(15,23,42,.04);}
+.wiz-q-num{font-size:10px;font-weight:800;color:#10b981;letter-spacing:1.5px;margin-bottom:6px;}
+.wiz-q-title{font-size:19px;font-weight:900;color:#0f172a;letter-spacing:-.6px;line-height:1.35;margin-bottom:8px;}
+.wiz-q-desc{font-size:12.5px;color:#64748b;line-height:1.6;margin-bottom:16px;font-weight:600;letter-spacing:-.2px;}
+.wiz-q-desc strong{color:#0f172a;font-weight:800;}
+.wiz-q-tip{background:linear-gradient(135deg,#fef9c3,#fef3c7);border:1px solid #fde68a;border-left:3px solid #f59e0b;border-radius:7px;padding:9px 12px;font-size:11.5px;color:#78350f;font-weight:700;margin-bottom:14px;line-height:1.55;letter-spacing:-.2px;}
+.wiz-q-tip strong{color:#92400e;font-weight:800;}
+
+.wiz-input{width:100%;padding:14px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:17px;font-weight:800;color:#0f172a;background:#fff;outline:none;transition:all .15s;font-family:inherit;letter-spacing:-.3px;}
+.wiz-input:focus{border-color:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.15);}
+.wiz-input.amount{text-align:right;font-variant-numeric:tabular-nums;}
+
+.wiz-presets{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap;}
+.wiz-preset-btn{flex:1;min-width:0;padding:9px 4px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;font-variant-numeric:tabular-nums;letter-spacing:-.2px;transition:all .15s;}
+.wiz-preset-btn:active,.wiz-preset-btn.on{background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-color:#059669;box-shadow:0 3px 8px rgba(16,185,129,.3);}
+
+.wiz-choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.wiz-choice-card{background:#fff;border:2.5px solid #e2e8f0;border-radius:14px;padding:22px 12px 18px;text-align:center;cursor:pointer;transition:all .2s;}
+.wiz-choice-card:active{transform:scale(.96);}
+.wiz-choice-card.yes{background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border-color:#bbf7d0;}
+.wiz-choice-card.yes:active,.wiz-choice-card.yes.selected{border-color:#10b981;background:linear-gradient(135deg,#d1fae5,#a7f3d0);box-shadow:0 6px 16px rgba(16,185,129,.2);}
+.wiz-choice-card.no{background:linear-gradient(135deg,#fef2f2,#fef0f0);border-color:#fecaca;}
+.wiz-choice-card.no:active,.wiz-choice-card.no.selected{border-color:#ef4444;background:linear-gradient(135deg,#fee2e2,#fecaca);box-shadow:0 6px 16px rgba(239,68,68,.2);}
+.wiz-choice-icon{font-size:38px;margin-bottom:6px;line-height:1;}
+.wiz-choice-label{font-size:16px;font-weight:900;color:#0f172a;letter-spacing:-.4px;margin-bottom:3px;}
+.wiz-choice-sub{font-size:10.5px;color:#64748b;font-weight:600;letter-spacing:-.2px;line-height:1.4;}
+
+.wiz-days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.wiz-day-btn{aspect-ratio:1/1.15;background:#fff;border:2px solid #e2e8f0;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#475569;transition:all .15s;letter-spacing:-.2px;}
+.wiz-day-btn.sat{color:#3b82f6;}
+.wiz-day-btn.sun{color:#ef4444;}
+.wiz-day-btn:active{transform:scale(.92);}
+.wiz-day-btn.on{background:linear-gradient(135deg,#10b981,#059669);border-color:#059669;color:#fff;transform:scale(1.04);box-shadow:0 4px 12px rgba(16,185,129,.35);}
+.wiz-day-btn.on.sat,.wiz-day-btn.on.sun{color:#fff;}
+
+.wiz-subtitle{font-size:14px;font-weight:800;color:#0f172a;letter-spacing:-.4px;margin:18px 0 8px;display:flex;align-items:center;gap:5px;}
+
+.wiz-time-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
+.wiz-time-field{background:#f8fafc;border-radius:12px;padding:12px 13px;min-width:0;overflow:hidden;}
+.wiz-time-field-label{font-size:10px;font-weight:800;color:#64748b;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;}
+.wiz-time-input-row{display:flex;align-items:center;gap:3px;min-width:0;}
+.wiz-time-input-row input{flex:1 1 0;min-width:0;width:0;border:1.5px solid #e2e8f0;background:#fff;border-radius:8px;padding:9px 2px;font-size:18px;font-weight:900;color:#0f172a;text-align:center;font-variant-numeric:tabular-nums;font-family:inherit;outline:none;-moz-appearance:textfield;box-sizing:border-box;}
+.wiz-time-input-row input::-webkit-outer-spin-button,.wiz-time-input-row input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.wiz-time-input-row input:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.15);}
+.wiz-time-input-row span{font-size:18px;font-weight:900;color:#94a3b8;flex-shrink:0;padding:0 1px;}
+
+.wiz-brk-current{margin-top:10px;padding:10px 14px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #bbf7d0;border-radius:9px;font-size:12.5px;font-weight:800;color:#047857;text-align:center;letter-spacing:-.2px;}
+
+.wiz-actions{display:flex;gap:8px;margin-top:16px;}
+.wiz-next-btn{flex:1;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:12px;padding:15px;font-size:14.5px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(16,185,129,.32);letter-spacing:-.3px;transition:all .15s;}
+.wiz-next-btn:disabled{background:#cbd5e1;box-shadow:none;cursor:not-allowed;opacity:.6;}
+.wiz-next-btn:active{transform:translateY(2px);box-shadow:0 3px 8px rgba(16,185,129,.25);}
+
+/* 결과 화면 (Wizard Step 5) */
+.wiz-result-hero{text-align:center;padding:20px 16px 16px;background:linear-gradient(135deg,#f0fdf4 0%,#ecfdf5 50%,#f0f9ff 100%);border-radius:14px;margin-bottom:14px;border:1.5px solid #bbf7d0;}
+.wiz-result-icon{font-size:44px;line-height:1;margin-bottom:7px;display:inline-block;animation:wizBounce 2.5s ease infinite;}
+.wiz-result-title{font-size:21px;font-weight:900;color:#047857;letter-spacing:-.6px;margin-bottom:5px;}
+.wiz-result-desc{font-size:11.5px;color:#065f46;font-weight:600;line-height:1.55;letter-spacing:-.2px;}
+
+.wiz-option-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:12px 14px;margin-bottom:14px;}
+.wiz-option-title{font-size:11px;font-weight:800;color:#475569;letter-spacing:.4px;margin-bottom:8px;text-transform:uppercase;}
+.wiz-option-toggle{display:flex;background:#f1f5f9;border-radius:9px;padding:3px;gap:3px;}
+.wiz-option-toggle button{flex:1;padding:11px 6px;background:transparent;border:none;color:#64748b;font-size:12.5px;font-weight:800;cursor:pointer;border-radius:7px;transition:all .18s;letter-spacing:-.3px;}
+.wiz-option-toggle button.on{background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 2px 6px rgba(16,185,129,.3);}
+.wiz-option-hint{font-size:10.5px;color:#94a3b8;margin-top:7px;line-height:1.5;font-weight:600;letter-spacing:-.2px;}
+
+.wiz-result-amounts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.wiz-amount-card{padding:14px 12px;border-radius:13px;border:2px solid;text-align:center;cursor:pointer;transition:all .15s;position:relative;}
+.wiz-amount-card:active{transform:scale(.97);}
+.wiz-amount-card.weekly{border-color:#bbf7d0;background:linear-gradient(135deg,#f0fdf4 0%,#fff 70%);}
+.wiz-amount-card.monthly{border-color:#fde68a;background:linear-gradient(135deg,#fffbeb 0%,#fff 70%);}
+.wiz-amount-card.weekly.selected{box-shadow:0 0 0 3px #10b981;border-color:#10b981;}
+.wiz-amount-card.monthly.selected{box-shadow:0 0 0 3px #f59e0b;border-color:#f59e0b;}
+.wiz-amount-check{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;}
+.wiz-amount-card.selected .wiz-amount-check{display:inline-flex;}
+.wiz-amount-card.weekly.selected .wiz-amount-check{background:#10b981;}
+.wiz-amount-card.monthly.selected .wiz-amount-check{background:#f59e0b;}
+.wiz-amount-tap-hint{position:absolute;top:4px;left:8px;font-size:9px;font-weight:700;color:#94a3b8;letter-spacing:-.2px;}
+.wiz-amount-card.selected .wiz-amount-tap-hint{display:none;}
+.wiz-amount-label{font-size:10px;font-weight:800;letter-spacing:.5px;margin-bottom:5px;text-transform:uppercase;}
+.wiz-amount-card.weekly .wiz-amount-label{color:#047857;}
+.wiz-amount-card.monthly .wiz-amount-label{color:#92400e;}
+.wiz-amount-val{font-size:22px;font-weight:900;letter-spacing:-.6px;font-variant-numeric:tabular-nums;line-height:1.1;}
+.wiz-amount-card.weekly .wiz-amount-val{color:#10b981;}
+.wiz-amount-card.monthly .wiz-amount-val{color:#f59e0b;}
+
+.wiz-restart-btn{flex:1;background:#fff;border:1.5px solid #e2e8f0;color:#475569;border-radius:12px;padding:14px;font-size:13px;font-weight:800;cursor:pointer;letter-spacing:-.3px;}
+.wiz-restart-btn:active{background:#f1f5f9;transform:translateY(1px);}
+
+/* 패턴 선택 (아니오 분기) */
+.wiz-pattern-list{display:flex;flex-direction:column;gap:9px;}
+.wiz-pattern-card{background:#fff;border:2.5px solid #e2e8f0;border-radius:13px;padding:14px 14px;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:12px;}
+.wiz-pattern-card:active{transform:scale(.98);}
+.wiz-pattern-card.bw135{background:linear-gradient(135deg,#eff6ff,#dbeafe);border-color:#bfdbfe;}
+.wiz-pattern-card.bw135:active{border-color:#3b82f6;}
+.wiz-pattern-card.bw24{background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-color:#ddd6fe;}
+.wiz-pattern-card.bw24:active{border-color:#8b5cf6;}
+.wiz-pattern-card.irr{background:linear-gradient(135deg,#fff7ed,#ffedd5);border-color:#fed7aa;}
+.wiz-pattern-card.irr:active{border-color:#f97316;}
+.wiz-pattern-icon{font-size:32px;line-height:1;flex-shrink:0;}
+.wiz-pattern-text{flex:1;min-width:0;}
+.wiz-pattern-name{font-size:14.5px;font-weight:900;color:#0f172a;letter-spacing:-.4px;margin-bottom:2px;}
+.wiz-pattern-card.bw135 .wiz-pattern-name{color:#1e40af;}
+.wiz-pattern-card.bw24 .wiz-pattern-name{color:#6d28d9;}
+.wiz-pattern-card.irr .wiz-pattern-name{color:#c2410c;}
+.wiz-pattern-sub{font-size:10.5px;font-weight:600;color:#64748b;letter-spacing:-.2px;line-height:1.4;}
+.wiz-pattern-arrow{font-size:18px;font-weight:900;color:#cbd5e1;flex-shrink:0;}
+
+/* 격주 입력 섹션 */
+.wiz-bw-section{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:13px 14px;margin-bottom:12px;}
+.wiz-bw-section.weekday{background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border-color:#bbf7d0;}
+.wiz-bw-section.sat{background:linear-gradient(135deg,#eff6ff,#dbeafe);border-color:#bfdbfe;}
+.wiz-bw-section-title{font-size:12.5px;font-weight:900;letter-spacing:-.3px;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+.wiz-bw-section.weekday .wiz-bw-section-title{color:#047857;}
+.wiz-bw-section.sat .wiz-bw-section-title{color:#1e40af;}
+.wiz-bw-section-title small{font-size:10px;font-weight:700;opacity:.7;margin-left:auto;}
+
+.wiz-bw-brk-row{display:flex;align-items:center;gap:6px;margin-top:8px;}
+.wiz-bw-brk-row label{font-size:11px;font-weight:800;color:#475569;flex-shrink:0;}
+.wiz-bw-brk-row .wiz-presets{margin-top:0;flex:1;}
+
+/* 불규칙 안내 */
+.wiz-irr-guide{background:linear-gradient(135deg,#fff7ed,#ffedd5);border:1.5px solid #fed7aa;border-radius:14px;padding:22px 18px;text-align:center;margin-bottom:12px;}
+.wiz-irr-guide-icon{font-size:48px;line-height:1;margin-bottom:10px;}
+.wiz-irr-guide-title{font-size:17px;font-weight:900;color:#c2410c;letter-spacing:-.4px;margin-bottom:8px;}
+.wiz-irr-guide-desc{font-size:12px;color:#7c2d12;font-weight:600;line-height:1.6;margin-bottom:16px;letter-spacing:-.2px;}
+.wiz-irr-guide-desc strong{color:#9a3412;font-weight:800;}
+.wiz-irr-goto-btn{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;border-radius:12px;padding:14px 24px;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(249,115,22,.35);width:100%;letter-spacing:-.3px;}
+.wiz-irr-goto-btn:active{transform:translateY(2px);}
+
+/* 격주 정보 박스 (결과 명세서) */
+.ws-bw-note{padding:10px 16px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-bottom:1px solid #f1f5f9;font-size:11.5px;color:#1e40af;font-weight:700;text-align:center;letter-spacing:-.2px;}
+.ws-bw-note strong{color:#1e3a8a;font-weight:900;}
+
+/* Step 11 "아니오, 평일 매일 달라요" 보조 버튼 */
+.wiz-each-link-btn{flex:1;background:#fff7ed;border:1.5px dashed #fb923c;color:#c2410c;border-radius:12px;padding:13px 10px;font-size:12.5px;font-weight:800;cursor:pointer;letter-spacing:-.3px;width:100%;line-height:1.4;}
+.wiz-each-link-btn:active{background:#ffedd5;transform:translateY(1px);}
+
+/* Step 13 — 월~금 각각 입력 카드 */
+.wiz-each-day-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 11px;margin-bottom:6px;}
+.wiz-each-day-card.empty{background:#f8fafc;opacity:.7;}
+.wiz-each-day-header{font-size:12px;font-weight:900;color:#0f172a;letter-spacing:-.3px;margin-bottom:7px;display:flex;align-items:center;gap:6px;}
+.wiz-each-day-header small{font-size:10px;font-weight:700;color:#94a3b8;margin-left:auto;}
+.wiz-each-day-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 64px;gap:5px;align-items:end;min-width:0;}
+.wiz-each-time-cell{min-width:0;}
+.wiz-each-time-label{font-size:9px;font-weight:700;color:#64748b;letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px;text-align:center;}
+.wiz-each-time-row{display:flex;align-items:center;gap:1px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:4px 4px;min-width:0;}
+.wiz-each-time-row input{flex:1 1 0;min-width:0;width:0;border:none;background:transparent;outline:none;font-size:13px;font-weight:900;color:#0f172a;text-align:center;font-variant-numeric:tabular-nums;font-family:inherit;padding:2px 0;-moz-appearance:textfield;}
+.wiz-each-time-row input::-webkit-outer-spin-button,.wiz-each-time-row input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.wiz-each-time-row span{font-size:12px;font-weight:900;color:#94a3b8;flex-shrink:0;}
+.wiz-each-brk-input{width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:6px 3px;font-size:13px;font-weight:800;color:#0f172a;background:#f8fafc;text-align:center;font-variant-numeric:tabular-nums;font-family:inherit;outline:none;box-sizing:border-box;-moz-appearance:textfield;}
+.wiz-each-brk-input::-webkit-outer-spin-button,.wiz-each-brk-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.wiz-each-tip{padding:9px 12px;background:linear-gradient(135deg,#fef9c3,#fef3c7);border:1px solid #fde68a;border-radius:8px;font-size:11px;color:#78350f;font-weight:700;margin-bottom:10px;line-height:1.5;letter-spacing:-.2px;}
+  .wage-input{font-size:16px;}
+  .time-input{font-size:13px;}
+  .amount-value{font-size:22px;}
+  .pi-rate-value{font-size:21px;}
+  .pr-daily-grid{grid-template-columns:1fr;}
+  .pr-method-val{font-size:19px;}
+}
+@supports(-webkit-touch-callout:none){
+  input[type="time"],input[type="number"],input[type="text"],input[type="tel"],input[type="date"]{font-size:16px;}
+  .wage-input,.time-input,.brk-input,.fi{font-size:16px;}
+  .fi.amount{font-size:18px;}
+}
+
+/* ═══ 직원별 출근부 추가 스타일 ═══ */
+.st-add-row{display:flex;gap:8px;}
+.st-name-input{flex:1;padding:13px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;font-weight:700;color:#0f172a;background:#fff;transition:all .15s;}
+.st-name-input:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12);}
+.st-add-btn{width:100%;margin-top:11px;padding:13px;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 3px 10px rgba(16,185,129,.3);letter-spacing:-.2px;}
+.st-add-btn:active{transform:scale(.98);}
+.wage-preset.on{background:#10b981;color:#fff;border-color:#10b981;}
+
+.emp-empty{padding:22px 12px;text-align:center;font-size:12.5px;color:#94a3b8;font-weight:600;line-height:1.7;}
+.emp-empty strong{color:#059669;}
+.emp-card{border:1.5px solid #e2e8f0;border-radius:12px;padding:12px 13px;margin-bottom:9px;background:linear-gradient(180deg,#f8fafc 0%,#fff 40%);}
+.emp-card:last-child{margin-bottom:0;}
+.emp-card-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.emp-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.emp-dot.sm{display:inline-block;width:8px;height:8px;vertical-align:baseline;margin-right:2px;}
+.emp-name{font-size:15px;font-weight:800;color:#0f172a;flex:1;letter-spacing:-.3px;}
+.emp-del{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;font-size:10.5px;font-weight:800;padding:5px 10px;border-radius:7px;cursor:pointer;}
+.emp-del:active{background:#dc2626;color:#fff;}
+.emp-card-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.emp-card-row:last-child{margin-bottom:0;}
+.emp-row-label{font-size:10px;font-weight:800;color:#64748b;width:48px;flex-shrink:0;letter-spacing:.2px;line-height:1.3;}
+.emp-wage-wrap{flex:1;position:relative;}
+.emp-wage-input{width:100%;padding:9px 30px 9px 11px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;font-weight:800;color:#0f172a;text-align:right;background:#fff;font-variant-numeric:tabular-nums;}
+.emp-wage-input:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12);}
+.emp-wage-suffix{position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:#64748b;pointer-events:none;}
+.emp-mind-toggle{display:flex;gap:3px;flex:1;background:#f1f5f9;border-radius:8px;padding:3px;}
+.emp-mind-btn{flex:1;padding:7px 2px;background:transparent;border:none;color:#64748b;font-size:11px;font-weight:700;cursor:pointer;border-radius:6px;}
+.emp-mind-btn.on{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;box-shadow:0 2px 5px rgba(59,130,246,.3);}
+
+/* 월 네비게이션 */
+.st-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.st-nav-btn{width:40px;height:40px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;font-size:20px;font-weight:800;color:#475569;cursor:pointer;flex-shrink:0;line-height:1;}
+.st-nav-btn:active{background:#10b981;color:#fff;border-color:#10b981;}
+.st-nav-center{flex:1;text-align:center;}
+.st-nav-text{font-size:16px;font-weight:800;color:#0f172a;letter-spacing:-.3px;}
+.st-nav-sub{font-size:10px;color:#94a3b8;font-weight:700;margin-top:1px;}
+.st-cal-hint{margin-top:9px;font-size:10.5px;color:#94a3b8;font-weight:600;text-align:center;}
+.st-cal-cnt{font-size:8.5px;font-weight:800;color:#2563eb;line-height:1;margin-top:1px;}
+
+/* 일별 입력 패널 */
+.st-day-panel{display:none;background:#fff;border:2px solid #10b981;border-radius:14px;padding:13px 14px;margin-bottom:12px;box-shadow:0 6px 20px rgba(16,185,129,.15);}
+.st-day-panel.show{display:block;animation:fadeIn .22s ease;}
+.dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;}
+.dp-title{font-size:15px;font-weight:800;color:#0f172a;letter-spacing:-.3px;}
+.dp-dow{font-size:12.5px;font-weight:800;color:#475569;background:#f1f5f9;padding:2px 8px;border-radius:6px;margin-left:2px;}
+.dp-dow.sat{color:#2563eb;background:#eff6ff;}
+.dp-dow.sun{color:#dc2626;background:#fef2f2;}
+.dp-chk{width:24px;height:24px;border:2px solid #cbd5e1;border-radius:7px;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:transparent;transition:all .15s;}
+.dp-chk.on{background:linear-gradient(135deg,#10b981,#059669);border-color:#059669;color:#fff;box-shadow:0 2px 6px rgba(16,185,129,.35);}
+.dp-convert-btn{margin-top:5px;padding:7px 12px;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:800;cursor:pointer;display:inline-block;}
+.dp-close{background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;font-size:11px;font-weight:800;padding:6px 11px;border-radius:8px;cursor:pointer;}
+.dp-empty{padding:16px 8px;text-align:center;font-size:12.5px;color:#94a3b8;font-weight:600;line-height:1.7;}
+.dp-goto-staff{margin-top:9px;padding:10px 18px;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:9px;color:#fff;font-size:12.5px;font-weight:800;cursor:pointer;}
+.dp-emp{border:1.5px solid #e2e8f0;border-radius:11px;margin-bottom:8px;background:#f8fafc;overflow:hidden;}
+.dp-emp:last-child{margin-bottom:0;}
+.dp-emp.work{border-color:#bbf7d0;background:linear-gradient(180deg,#f0fdf4 0%,#fff 40%);}
+.dp-emp-head{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;user-select:none;}
+.dp-emp-name{font-size:14px;font-weight:800;color:#0f172a;flex:1;letter-spacing:-.3px;}
+.dp-emp-sum{font-size:11.5px;font-weight:700;color:#94a3b8;}
+.dp-emp.work .dp-emp-sum{color:#059669;}
+.dp-tg{width:86px;}
+.dp-tg::before{content:'출근 안 함';}
+.dp-emp.work .dp-tg{background:linear-gradient(135deg,#10b981,#059669);}
+.dp-emp.work .dp-tg::before{content:'출근';right:auto;left:10px;color:#fff;}
+.dp-emp.work .dp-tg::after{left:60px;}
+.dp-emp-body{padding:0 12px 12px;}
+.dp-mode-toggle{display:flex;gap:3px;background:#f1f5f9;border-radius:9px;padding:3px;margin-bottom:9px;}
+.dp-mode-toggle button{flex:1;padding:8px 4px;background:transparent;border:none;color:#64748b;font-size:11.5px;font-weight:700;cursor:pointer;border-radius:7px;}
+.dp-mode-toggle button.on{background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 2px 5px rgba(16,185,129,.3);}
+.dp-hours-row{display:flex;align-items:center;gap:6px;}
+.dp-hours-input{width:72px;flex-shrink:0;padding:10px 10px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:16px;font-weight:800;color:#0f172a;text-align:right;background:#fff;font-variant-numeric:tabular-nums;-moz-appearance:textfield;}
+.dp-hours-input::-webkit-outer-spin-button,.dp-hours-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.dp-hours-input:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12);}
+.dp-hours-suffix{font-size:12px;font-weight:700;color:#64748b;flex-shrink:0;}
+.dp-hours-note{margin-top:7px;font-size:10px;color:#f59e0b;font-weight:700;line-height:1.4;}
+
+/* 월 요약 */
+.st-sum-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;}
+.st-sum-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 8px;text-align:center;}
+.st-sum-item.wide{grid-column:1 / -1;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-color:#bbf7d0;}
+.st-sum-label{font-size:9.5px;font-weight:800;color:#94a3b8;letter-spacing:.3px;margin-bottom:3px;}
+.st-sum-val{font-size:15px;font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums;letter-spacing:-.3px;}
+.st-sum-val.green{color:#059669;font-size:18px;}
+.st-goto-stmt{width:100%;margin-top:10px;padding:12px;background:#fff;border:1.5px solid #10b981;border-radius:10px;color:#059669;font-size:13px;font-weight:800;cursor:pointer;}
+.st-goto-stmt:active{background:#10b981;color:#fff;}
+
+/* 명세서 */
+.st-chips{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none;}
+.st-chips::-webkit-scrollbar{display:none;}
+.st-chipbar{height:10px;background:#e2e8f0;border-radius:6px;margin-top:6px;position:relative;overflow:hidden;}
+.st-chipbar-thumb{position:absolute;top:0;left:0;height:100%;min-width:36px;background:linear-gradient(90deg,#10b981,#059669);border-radius:6px;box-shadow:0 1px 3px rgba(16,185,129,.4);transition:none;}
+.st-chip{flex-shrink:0;padding:8px 13px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:20px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;}
+.st-chip.on{background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-color:#059669;box-shadow:0 2px 6px rgba(16,185,129,.3);}
+.st-chip.on .emp-dot.sm{background:#fff !important;}
+.st-stmt-note{margin-top:10px;font-size:10px;color:#94a3b8;font-weight:600;line-height:1.5;text-align:center;}
+.st-stmt-note.warn{color:#d97706;background:#fffbeb;border:1px dashed #fcd34d;border-radius:8px;padding:8px 10px;text-align:left;}
+.st-daylist{margin-top:12px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;}
+.st-daylist-h{padding:9px 12px;background:#f8fafc;font-size:11px;font-weight:800;color:#475569;border-bottom:1px solid #e2e8f0;}
+.st-dayrow{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid #f1f5f9;font-size:11px;}
+.st-dayrow:last-child{border-bottom:none;}
+.st-dayrow-date{font-weight:800;color:#0f172a;width:62px;flex-shrink:0;font-variant-numeric:tabular-nums;}
+.st-dayrow-detail{flex:1;color:#64748b;font-weight:600;}
+.st-dayrow-h{font-weight:800;color:#059669;font-variant-numeric:tabular-nums;}
+.st-hp-badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:800;}
+.st-hp-badge.ok{background:#f0fdf4;color:#059669;border:1px solid #bbf7d0;}
+.st-hp-badge.no{background:#f8fafc;color:#94a3b8;border:1px solid #e2e8f0;}
+.st-hp-badge.carry{background:#fffbeb;color:#d97706;border:1px solid #fcd34d;}
+.st-hp-badge.in{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;}
+.st-stmt-note.carry{color:#92400e;background:#fffbeb;border:1px dashed #fcd34d;border-radius:8px;padding:8px 10px;text-align:left;}
+.emp-tax-btn{flex:1;padding:7px 2px;background:transparent;border:none;color:#64748b;font-size:11px;font-weight:700;cursor:pointer;border-radius:6px;}
+.emp-tax-btn.on{background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;box-shadow:0 2px 5px rgba(139,92,246,.3);}
+.emp-gn-btn{flex:1;padding:7px 2px;background:transparent;border:none;color:#64748b;font-size:11px;font-weight:700;cursor:pointer;border-radius:6px;}
+.emp-gn-btn.on{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;box-shadow:0 2px 5px rgba(245,158,11,.3);}
+.st-tax-badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10.5px;font-weight:800;}
+.st-tax-badge.in4{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;}
+.st-tax-badge.fl{background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;}
+.st-tax-tag{display:inline-block;padding:1px 4px;border-radius:4px;font-size:8.5px;font-weight:800;vertical-align:middle;white-space:nowrap;}
+.st-tax-tag.in4{background:#eff6ff;color:#2563eb;}
+.st-tax-tag.fl{background:#f5f3ff;color:#7c3aed;}
+.st-tax-box{border-radius:11px;padding:11px 13px;margin-bottom:12px;border:1.5px solid;}
+.st-tax-box.in4{background:linear-gradient(180deg,#eff6ff,#fff);border-color:#bfdbfe;}
+.st-tax-box.fl{background:linear-gradient(180deg,#f5f3ff,#fff);border-color:#ddd6fe;}
+.st-tax-box-h{font-size:12px;font-weight:800;color:#0f172a;margin-bottom:7px;letter-spacing:-.2px;}
+.st-tax-box-row{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:#334155;padding:3px 0;font-variant-numeric:tabular-nums;}
+.st-tax-box-row.minus span:last-child{color:#dc2626;}
+.st-tax-box-row.net{border-top:1px dashed #cbd5e1;margin-top:4px;padding-top:7px;font-size:13.5px;font-weight:800;color:#0f172a;}
+.st-tax-box-row.net span:last-child{color:#7c3aed;}
+.st-tax-box-note{margin-top:7px;font-size:10px;color:#64748b;font-weight:600;line-height:1.55;}
+.ws-total-sub{margin-top:4px;font-size:10px;font-weight:700;opacity:.75;}
+.bk-alert{background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:9px 12px;font-size:12px;color:#b91c1c;font-weight:700;line-height:1.55;margin-bottom:10px;}
+.bk-btns{display:flex;gap:8px;}
+.bk-btn{flex:1;padding:12px 8px;border-radius:10px;font-size:12.5px;font-weight:800;cursor:pointer;letter-spacing:-.2px;}
+.bk-btn.out{background:linear-gradient(135deg,#10b981,#059669);border:none;color:#fff;box-shadow:0 3px 10px rgba(16,185,129,.25);}
+.bk-btn.in{background:#fff;border:1.5px solid #cbd5e1;color:#475569;}
+.bk-btn:active{transform:scale(.98);}
+.bk-note{margin-top:9px;font-size:10.5px;color:#94a3b8;font-weight:600;line-height:1.6;}
+.bk-note strong{color:#d97706;}
+.dp-status-row{display:flex;gap:6px;padding:0 12px 11px;}
+.dp-status-btn{flex:1;padding:8px 4px;background:#fff;border:1.5px dashed #cbd5e1;border-radius:8px;color:#64748b;font-size:11px;font-weight:700;cursor:pointer;}
+.dp-status-btn.abs:active{border-color:#dc2626;color:#dc2626;}
+.dp-status-btn.pd:active{border-color:#059669;color:#059669;}
+.dp-status-btn.clear{width:100%;margin-top:8px;flex:none;border-style:solid;background:#f8fafc;}
+.dp-emp.absent{border-color:#fecaca;background:linear-gradient(180deg,#fef2f2 0%,#fff 40%);}
+.dp-emp.paid{border-color:#bbf7d0;background:linear-gradient(180deg,#f0fdf4 0%,#fff 40%);}
+.dp-emp-sum.absent{color:#dc2626;font-weight:800;}
+.dp-emp-sum.paid{color:#059669;font-weight:800;}
+.dp-hol-note{background:#fffbeb;border:1px dashed #fcd34d;border-radius:9px;padding:9px 11px;font-size:10.5px;color:#92400e;font-weight:600;line-height:1.55;margin-bottom:10px;}
+/* 전체 요약 표: 컬럼 고정 + 줄바꿈 방지 */
+#stmt-body{padding:14px 10px;}
+#stmt-body .ws-totals{padding:14px 0;background:transparent;border-bottom:none;}
+#stmt-body .ws-total-block{box-shadow:0 2px 8px rgba(245,158,11,.12);}
+#stmt-body .ws-breakdown-wrap{padding:2px 0 0;}
+#stmt-body .ws-info{border-radius:11px;border:1px solid #eef2f7;margin-bottom:12px;}
+#stmt-body .ws-namebanner{border-radius:12px;border:1px solid #e2e8f0;border-bottom:2px solid #e2e8f0;margin-bottom:12px;}
+#stmt-body .pi-breakdown table{table-layout:fixed;}
+#stmt-body .pi-breakdown th:nth-child(1){width:40%;text-align:left;}
+#stmt-body .pi-breakdown th:nth-child(2){width:13%;text-align:center;}
+#stmt-body .pi-breakdown th:nth-child(3){width:15%;text-align:center;}
+#stmt-body .pi-breakdown th:nth-child(4){width:32%;text-align:right;}
+#stmt-body .pi-breakdown td:nth-child(2),#stmt-body .pi-breakdown td:nth-child(3){text-align:center;}
+#stmt-body .pi-breakdown td:nth-child(4){text-align:right;}
+#stmt-body .pi-breakdown td{padding:12px 5px;line-height:1;vertical-align:middle;height:42px;box-sizing:border-box;}
+#stmt-body .pi-breakdown th{padding:8px 5px;line-height:1;vertical-align:middle;}
+#stmt-body .st-tax-tag{position:relative;top:-1px;line-height:1.4;}
+#stmt-body .emp-dot.sm{position:relative;top:-1px;}
+#stmt-body .pi-breakdown td.nw,#stmt-body .pi-breakdown td:nth-child(2),#stmt-body .pi-breakdown td:nth-child(3),#stmt-body .pi-breakdown td:nth-child(4){white-space:nowrap;}
+.st-sum-name{text-align:left !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.st-sum-name .emp-dot.sm{margin-right:4px;}
+.st-sum-name .st-tax-tag{margin-left:4px;}
+.st-tax-gross{display:inline-block;margin-left:5px;padding:1px 7px;border-radius:5px;background:#fef3c7;color:#b45309;font-size:9.5px;font-weight:800;vertical-align:middle;}
+.st-share-btn{display:flex;width:100%;padding:15px;font-size:14px;border-radius:14px;}
+.hdr-btns{display:flex;gap:6px;align-items:center;}
+.hdr-home{white-space:nowrap;}
+.hs-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:1000;padding:20px;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+.hs-overlay.show{display:flex;animation:fadeIn .18s ease;}
+.hs-modal{background:#fff;border-radius:18px;padding:20px 18px;max-width:400px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+.hs-title{font-size:16px;font-weight:800;color:#0f172a;margin-bottom:12px;letter-spacing:-.3px;}
+.hs-warn{background:#fffbeb;border:1px dashed #fcd34d;border-radius:10px;padding:10px 12px;font-size:11.5px;color:#92400e;font-weight:600;line-height:1.6;margin-bottom:13px;}
+.hs-steps{margin-bottom:14px;}
+.hs-step{display:flex;align-items:flex-start;gap:9px;padding:8px 0;font-size:13px;color:#334155;font-weight:600;line-height:1.5;border-bottom:1px solid #f1f5f9;}
+.hs-step:last-of-type{border-bottom:none;}
+.hs-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.hs-tip{margin-top:9px;font-size:11px;color:#64748b;font-weight:600;line-height:1.55;background:#f8fafc;border-radius:8px;padding:8px 10px;}
+.hs-close{width:100%;padding:13px;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:11px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;}
+.emp-card.retired{background:linear-gradient(180deg,#f8fafc,#fff);border-style:dashed;}
+.emp-retired-tag{display:inline-block;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;font-size:9px;font-weight:800;vertical-align:middle;border:1px solid #e2e8f0;}
+.emp-retired-info{font-size:10.5px;color:#94a3b8;font-weight:600;margin-bottom:9px;line-height:1.5;}
+.emp-retired-btns{display:flex;gap:7px;}
+.emp-back-btn{flex:1;padding:9px;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:8px;color:#fff;font-size:11.5px;font-weight:800;cursor:pointer;}
+.st-share-hint{margin-top:7px;font-size:10px;color:#94a3b8;font-weight:600;text-align:center;line-height:1.5;}
+
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="hdr-title-wrap">
+      <div class="hdr-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <h1 class="hdr-title">
+        <span class="hdr-title-pre">파트타임</span><span class="hdr-title-main">급여계산기</span>
+      </h1>
+    </div>
+    <div class="hdr-btns">
+      <button class="hdr-reset hdr-home" onclick="showHomeShortcut()">📱 바로가기</button>
+      <button class="hdr-reset" onclick="resetCurrentTab()">초기화</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" id="tab-cal" onclick="switchTab('cal')"><span class="tab-icon">🗓️</span>출근부</button>
+    <button class="tab" id="tab-stmt" onclick="switchTab('stmt')"><span class="tab-icon">📄</span>명세서</button>
+    <button class="tab" id="tab-staff" onclick="switchTab('staff')"><span class="tab-icon">👥</span>직원</button>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ━━ 탭2: 직원 관리 ━━ -->
+<div class="tab-pane" id="pane-staff">
+
+  <div class="card">
+    <div class="card-h"><span class="card-t">💾 데이터 백업</span><span class="card-sub">급여 기록은 3년 보존 의무</span></div>
+    <div class="card-b">
+      <div class="bk-alert">🔔 <strong>자주 백업해 주세요!</strong> 최소한 <strong>급여 정산이 끝날 때마다</strong> 백업 파일을 저장해 두시는 걸 권장합니다.</div>
+      <div class="bk-btns">
+        <button class="bk-btn out" onclick="exportBackup()">📤 백업 파일 저장</button>
+        <button class="bk-btn in" onclick="document.getElementById('bk-file').click()">📥 백업 불러오기</button>
+      </div>
+      <input type="file" id="bk-file" accept=".json,application/json" style="display:none" onchange="importBackup(this)">
+      <div class="bk-note">이 계산기의 데이터는 <strong>이 브라우저에만</strong> 저장됩니다. 브라우저 데이터 삭제·폰 교체 시 기록이 사라집니다. 백업 파일은 카카오톡 나에게 보내기 등으로 보관하면 안전합니다.</div>
+    </div>
+  </div>
+
+  <div class="options-card">
+    <div class="options-row">
+      <span class="options-label">사업장 규모 (전 직원 공통)</span>
+      <div class="options-toggle">
+        <button id="biz-btn-under5" class="on" onclick="setBizSize(false)">5인 미만</button>
+        <button id="biz-btn-over5" onclick="setBizSize(true)">5인 이상</button>
+      </div>
+      <div class="options-hint">5인 이상 사업장은 연장(1.5배)·야간(0.5배 가산)·공휴일 가산이 적용됩니다.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><span class="card-t">직원 추가</span><span class="card-sub">이름 + 시급만 입력</span></div>
+    <div class="card-b">
+      <div class="st-add-row">
+        <input class="st-name-input" id="emp-new-name" type="text" placeholder="직원 이름" maxlength="20">
+      </div>
+      <div class="wage-row" style="margin-top:8px">
+        <div class="wage-input-wrap">
+          <input class="wage-input" id="emp-new-wage" inputmode="numeric" placeholder="시급">
+          <span class="wage-suffix">원</span>
+        </div>
+      </div>
+      <div class="wage-presets">
+        <button class="wage-preset" data-wage="10320" onclick="setNewEmpWage(10320)">최저 10,320</button>
+        <button class="wage-preset" data-wage="11000" onclick="setNewEmpWage(11000)">11,000</button>
+        <button class="wage-preset" data-wage="12000" onclick="setNewEmpWage(12000)">12,000</button>
+        <button class="wage-preset" data-wage="13000" onclick="setNewEmpWage(13000)">13,000</button>
+      </div>
+      <button class="st-add-btn" onclick="addEmployee()">➕ 직원 등록</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><span class="card-t">직원 명단</span><span class="card-sub">시급·주휴 기준 개별 설정</span></div>
+    <div class="card-b" id="emp-list"></div>
+  </div>
+
+</div>
+
+<!-- ━━ 탭3: 출근부 (날짜 중심 입력) ━━ -->
+<div class="tab-pane on" id="pane-cal">
+
+  <div class="card">
+    <div class="card-b" style="padding:10px 12px">
+      <div class="st-nav">
+        <button class="st-nav-btn" onclick="changeMonth(-1)">‹</button>
+        <div class="st-nav-center">
+          <div class="st-nav-text" id="cal-nav-text">2026년 7월</div>
+          <div class="st-nav-sub" id="cal-nav-sub">총 31일</div>
+        </div>
+        <button class="st-nav-btn" onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="mo-cal-header">
+        <div class="mo-cal-dow sun">일</div>
+        <div class="mo-cal-dow">월</div>
+        <div class="mo-cal-dow">화</div>
+        <div class="mo-cal-dow">수</div>
+        <div class="mo-cal-dow">목</div>
+        <div class="mo-cal-dow">금</div>
+        <div class="mo-cal-dow sat">토</div>
+      </div>
+      <div class="mo-cal-grid" id="cal-grid"></div>
+      <div class="st-cal-hint">날짜를 누르면 그날 근무한 직원과 시간을 입력할 수 있습니다</div>
+    </div>
+  </div>
+
+  <div class="st-day-panel" id="day-panel"></div>
+
+  <div class="card">
+    <div class="card-h"><span class="card-t">이번 달 요약</span><span class="card-sub">세전 · 주휴 포함</span></div>
+    <div class="card-b">
+      <div class="st-sum-grid">
+        <div class="st-sum-item"><div class="st-sum-label">근무 직원</div><div class="st-sum-val" id="cal-sum-emps">0명</div></div>
+        <div class="st-sum-item"><div class="st-sum-label">연인원</div><div class="st-sum-val" id="cal-sum-days">0일</div></div>
+        <div class="st-sum-item"><div class="st-sum-label">총 시간</div><div class="st-sum-val" id="cal-sum-h">0h</div></div>
+        <div class="st-sum-item wide"><div class="st-sum-label">예상 인건비</div><div class="st-sum-val green" id="cal-sum-pay">0원</div></div>
+      </div>
+      <button class="st-goto-stmt" onclick="switchTab('stmt')">📄 직원별 명세서 보기</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ━━ 탭4: 명세서 ━━ -->
+<div class="tab-pane" id="pane-stmt">
+
+  <div class="card">
+    <div class="card-b" style="padding:10px 12px">
+      <div class="st-nav">
+        <button class="st-nav-btn" onclick="changeMonth(-1)">‹</button>
+        <div class="st-nav-center">
+          <div class="st-nav-text" id="stmt-nav-text">2026년 7월</div>
+        </div>
+        <button class="st-nav-btn" onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="st-chips" id="stmt-chips" onscroll="updChipsBar()"></div>
+      <div class="st-chipbar" id="stmt-chipbar"><div class="st-chipbar-thumb" id="stmt-chipbar-thumb"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-b" id="stmt-body" style="background:#fff"></div>
+  </div>
+
+  <div id="stmt-share-wrap" style="display:none">
+    <button class="copy-btn st-share-btn" onclick="shareStmt()">
+      📸 이미지로 저장/복사 → 카카오톡 공유
+    </button>
+    <div class="st-share-hint">버튼을 누르면 명세서가 이미지로 만들어져 클립보드에 복사되거나 공유창이 열립니다.</div>
+  </div>
+
+</div>
+
+
+<div class="footer">Powered by <span>문사무장 급여 시스템</span></div>
+
+</div>
+
+<div class="hs-overlay" id="hs-overlay" onclick="if(event.target===this)closeHomeShortcut()">
+  <div class="hs-modal">
+    <div class="hs-title">📱 홈 화면에 바로가기 만들기</div>
+    <div class="hs-warn">⚠️ 급여 기록은 <strong>지금 이 브라우저에만</strong> 저장돼 있어요.<br>바로가기로 열면 항상 이 브라우저로 돌아와서 <strong>데이터가 그대로 유지</strong>됩니다. 다른 브라우저나 카카오톡 안에서 열면 기록이 보이지 않아요.</div>
+    <div class="hs-steps" id="hs-steps"></div>
+    <button class="hs-close" onclick="closeHomeShortcut()">확인</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════════════
+// 공통 설정
+// ══════════════════════════════════════════════════════════════
+const CFG = { stdW:40, maxHolH:8, otThresh:8, otRate:0.5, nightRate:0.5, minH:15, defBrk:60, minWage:10320, monthWeeks:4.345 };
+const DAYS = [
+  { key:'mon', name:'월', cls:'' }, { key:'tue', name:'화', cls:'' },
+  { key:'wed', name:'수', cls:'' }, { key:'thu', name:'목', cls:'' },
+  { key:'fri', name:'금', cls:'' }, { key:'sat', name:'토', cls:'sat' },
+  { key:'sun', name:'일', cls:'sun' }
+];
+
+// ★ 한국 공휴일 (기존 시스템에서 가져옴)
+const HOLIDAYS = {
+  2023:{'2023-01-01':'신정','2023-01-21':'설날연휴','2023-01-22':'설날','2023-01-23':'설날연휴','2023-01-24':'대체공휴일','2023-03-01':'삼일절','2023-05-01':'노동절','2023-05-05':'어린이날','2023-05-27':'부처님오신날','2023-05-29':'대체공휴일','2023-06-06':'현충일','2023-08-15':'광복절','2023-09-28':'추석연휴','2023-09-29':'추석','2023-09-30':'추석연휴','2023-10-02':'임시공휴일','2023-10-03':'개천절','2023-10-09':'한글날','2023-12-25':'성탄절'},
+  2024:{'2024-01-01':'신정','2024-02-09':'설날연휴','2024-02-10':'설날','2024-02-11':'설날연휴','2024-02-12':'대체공휴일','2024-03-01':'삼일절','2024-05-01':'노동절','2024-05-05':'어린이날','2024-05-06':'대체공휴일','2024-05-15':'부처님오신날','2024-06-06':'현충일','2024-08-15':'광복절','2024-09-16':'추석연휴','2024-09-17':'추석','2024-09-18':'추석연휴','2024-10-03':'개천절','2024-10-09':'한글날','2024-12-25':'성탄절'},
+  2025:{'2025-01-01':'신정','2025-01-28':'설날연휴','2025-01-29':'설날','2025-01-30':'설날연휴','2025-03-01':'삼일절','2025-05-01':'노동절','2025-05-05':'어린이날/부처님오신날','2025-05-06':'대체공휴일','2025-06-06':'현충일','2025-08-15':'광복절','2025-10-03':'개천절','2025-10-05':'추석연휴','2025-10-06':'추석','2025-10-07':'추석연휴','2025-10-09':'한글날','2025-12-25':'성탄절'},
+  2026:{'2026-01-01':'신정','2026-02-16':'설날연휴','2026-02-17':'설날','2026-02-18':'설날연휴','2026-03-01':'삼일절','2026-05-01':'노동절','2026-05-05':'어린이날','2026-05-24':'부처님오신날','2026-06-06':'현충일','2026-08-15':'광복절','2026-09-24':'추석연휴','2026-09-25':'추석','2026-09-26':'추석연휴','2026-10-03':'개천절','2026-10-09':'한글날','2026-12-25':'성탄절'},
+  2027:{'2027-01-01':'신정','2027-02-06':'설날연휴','2027-02-07':'설날','2027-02-08':'설날연휴','2027-03-01':'삼일절','2027-05-01':'노동절','2027-05-05':'어린이날','2027-05-13':'부처님오신날','2027-06-06':'현충일','2027-08-15':'광복절','2027-10-03':'개천절','2027-10-14':'추석연휴','2027-10-15':'추석','2027-10-16':'추석연휴','2027-10-09':'한글날','2027-12-25':'성탄절'},
+  2028:{'2028-01-01':'신정','2028-01-26':'설날연휴','2028-01-27':'설날','2028-01-28':'설날연휴','2028-03-01':'삼일절','2028-05-01':'노동절','2028-05-02':'부처님오신날','2028-05-05':'어린이날','2028-06-06':'현충일','2028-08-15':'광복절','2028-09-30':'추석연휴','2028-10-01':'추석','2028-10-02':'추석연휴','2028-10-03':'개천절','2028-10-09':'한글날','2028-12-25':'성탄절'},
+  2029:{'2029-01-01':'신정','2029-02-12':'설날연휴','2029-02-13':'설날','2029-02-14':'설날연휴','2029-03-01':'삼일절','2029-05-01':'노동절','2029-05-05':'어린이날','2029-05-20':'부처님오신날','2029-06-06':'현충일','2029-08-15':'광복절','2029-09-21':'추석연휴','2029-09-22':'추석','2029-09-23':'추석연휴','2029-10-03':'개천절','2029-10-09':'한글날','2029-12-25':'성탄절'},
+};
+function getHoliday(ds){ return (HOLIDAYS[parseInt(ds.substr(0,4))] || {})[ds] || null; }
+function p2(n){ return String(n).padStart(2,'0'); }
+function fds(d){ return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
+
+const W = function(n){ return Math.round(n||0).toLocaleString('ko-KR'); };
+const fmt = function(n){ return Math.round(n||0).toLocaleString('ko-KR'); };
+const fmtH = function(h){ return (h||0).toFixed(1).replace(/\.0$/,''); };
+const Hfmt = function(n){
+  if(!n) return '0시간';
+  const r = Math.round(n*10)/10;
+  return Number.isInteger(r) ? r+'시간' : r.toFixed(1)+'시간';
+};
+function pm(t){ if(!t) return null; const parts = t.split(':').map(Number); return parts[0]*60 + parts[1]; }
+
+function getMoDates(yr, mo){
+  const dates = [];
+  const last = new Date(yr, mo+1, 0).getDate();
+  for(let d=1; d<=last; d++) dates.push(new Date(yr, mo, d));
+  return dates;
+}
+
+// 헬퍼: 월에 포함되는 주들 (월요일 시작, 월 경계 걸친 주 포함)
+function getMoWeeks(yr, mo){
+  const weeks = [];
+  const firstDay = new Date(yr, mo, 1);
+  const lastDay = new Date(yr, mo+1, 0);
+  let monday = new Date(firstDay);
+  const dow = firstDay.getDay();
+  const back = dow === 0 ? 6 : dow - 1;
+  monday.setDate(monday.getDate() - back);
+  while(monday <= lastDay){
+    const week = [];
+    for(let i=0; i<7; i++){
+      const d = new Date(monday);
+      d.setDate(d.getDate() + i);
+      week.push(d);
+    }
+    weeks.push(week);
+    monday.setDate(monday.getDate() + 7);
+  }
+  return weeks;
+}
+
+function isLaborDay(ds){ return ds.substr(5,5) === '05-01'; }
+
+// 일별 근무시간 (휴게 차감)
+function calcDayH(start, end, brkMin){
+  if(!start || !end) return 0;
+  const sParts = start.split(':').map(Number);
+  const eParts = end.split(':').map(Number);
+  let dur = (eParts[0]*60+eParts[1]) - (sParts[0]*60+sParts[1]);
+  if(dur <= 0) dur += 1440;
+  return Math.max(0, (dur - (brkMin||0)) / 60);
+}
+
+// 일별 야간시간 (휴게 차감 없이)
+function dayNightH(start, end){
+  if(!start || !end) return 0;
+  let s = pm(start), e = pm(end);
+  if(e <= s) e += 1440;
+  function ov(a1,a2,b1,b2){ return Math.max(0, Math.min(a2,b2) - Math.max(a1,b1)); }
+  let nm = 0;
+  nm += ov(s,e,0,360);
+  nm += ov(s,e,1320,1440);
+  nm += ov(s,e,1440,1800);
+  return nm/60;
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 상태 (직원별 출근부 버전)
+// ══════════════════════════════════════════════════════════════
+const STORE_KEY = 'staffPayCalc_v1';
+const _now = new Date();
+let state = {
+  activeTab: 'cal',
+  yr: _now.getFullYear(),
+  mo: _now.getMonth(),
+  fiveOrMore: false,
+  employees: [],          // [{id, name, wage, minDays}]
+  records: {},            // { 'YYYY-MM-DD': { empId: {mode:'time',start,end,brk} | {mode:'hours',hours} } }
+  selectedDate: null,
+  stmtEmpId: '__all__',
+  staffView: 'active'
+};
+
+function genId(){ return 'e' + Date.now().toString(36) + Math.random().toString(36).substr(2,4); }
+
+function load(){
+  try{
+    const saved = localStorage.getItem(STORE_KEY);
+    if(saved){
+      const p = JSON.parse(saved);
+      if(p.activeTab && p.activeTab !== 'wizard') state.activeTab = p.activeTab;
+      if(typeof p.yr === 'number') state.yr = p.yr;
+      if(typeof p.mo === 'number' && p.mo >= 0 && p.mo <= 11) state.mo = p.mo;
+      state.fiveOrMore = !!p.fiveOrMore;
+      if(Array.isArray(p.employees)) state.employees = p.employees.filter(function(e){ return e && e.id && typeof e.name === 'string'; });
+      if(p.records && typeof p.records === 'object') state.records = p.records;
+      if(typeof p.stmtEmpId === 'string') state.stmtEmpId = p.stmtEmpId;
+    }
+  }catch(err){ console.warn('load failed', err); }
+}
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(err){} }
+
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(ch){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch];
+  });
+}
+function getEmp(id){ for(let i=0;i<state.employees.length;i++){ if(state.employees[i].id === id) return state.employees[i]; } return null; }
+function empColor(id){
+  const palette = ['#10b981','#3b82f6','#f59e0b','#8b5cf6','#ef4444','#06b6d4','#ec4899','#84cc16'];
+  let idx = 0;
+  for(let i=0;i<state.employees.length;i++){ if(state.employees[i].id === id){ idx = i; break; } }
+  return palette[idx % palette.length];
+}
+
+// ══════════════════════════════════════════════════════════════
+// 탭 전환 / 초기화
+// ══════════════════════════════════════════════════════════════
+function switchTab(tab){
+  state.activeTab = tab;
+  save();
+  ['staff','cal','stmt'].forEach(function(t){
+    const tabBtn = document.getElementById('tab-'+t);
+    const pane = document.getElementById('pane-'+t);
+    if(tabBtn) tabBtn.classList.toggle('on', t===tab);
+    if(pane) pane.classList.toggle('on', t===tab);
+  });
+  if(tab === 'staff') renderStaff();
+  if(tab === 'cal') renderCal();
+  if(tab === 'stmt') renderStmt();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function resetCurrentTab(){
+  if(state.activeTab === 'staff'){
+    if(state.employees.length === 0){ toast('등록된 직원이 없습니다'); return; }
+    if(!confirm('직원 명단과 모든 출근 기록을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
+    state.employees = [];
+    state.records = {};
+    state.selectedDate = null;
+    state.stmtEmpId = '__all__';
+    save();
+    renderStaff();
+    toast('직원 명단이 초기화되었습니다');
+  }else if(state.activeTab === 'cal'){
+    if(!confirm((state.mo+1)+'월의 출근 기록을 전부 삭제하시겠습니까?')) return;
+    const prefix = state.yr + '-' + p2(state.mo+1) + '-';
+    Object.keys(state.records).forEach(function(ds){
+      if(ds.indexOf(prefix) === 0) delete state.records[ds];
+    });
+    state.selectedDate = null;
+    save();
+    renderCal();
+    toast((state.mo+1)+'월 기록이 초기화되었습니다');
+  }else{
+    toast('명세서 탭은 초기화할 항목이 없습니다');
+  }
+}
+
+function changeMonth(delta){
+  let yr = state.yr, mo = state.mo + delta;
+  if(mo < 0){ yr--; mo = 11; }
+  else if(mo > 11){ yr++; mo = 0; }
+  state.yr = yr; state.mo = mo;
+  state.selectedDate = null;
+  save();
+  if(state.activeTab === 'stmt') renderStmt();
+  else renderCal();
+}
+
+// ══════════════════════════════════════════════════════════════
+// 👥 직원 관리
+// ══════════════════════════════════════════════════════════════
+function setBizSize(five){
+  state.fiveOrMore = five;
+  save();
+  renderStaff();
+  if(five){
+    let hoursCnt = 0;
+    Object.keys(state.records).forEach(function(ds){
+      Object.keys(state.records[ds]).forEach(function(id){
+        if(state.records[ds][id].mode === 'hours') hoursCnt++;
+      });
+    });
+    toast(hoursCnt > 0
+      ? '5인 이상 사업장 적용\n⚠️ "시간만" 입력된 기록 '+hoursCnt+'건은 출퇴근 시각으로\n수정해야 야간수당이 계산됩니다'
+      : '5인 이상 사업장 — 연장·야간·공휴일 가산 적용');
+  }else{
+    toast('5인 미만 사업장');
+  }
+}
+
+function setNewEmpWage(v){
+  const el = document.getElementById('emp-new-wage');
+  el.value = v > 0 ? v.toLocaleString('ko-KR') : '';
+  document.querySelectorAll('#pane-staff .wage-preset[data-wage]').forEach(function(b){
+    b.classList.toggle('on', parseInt(b.dataset.wage) === v);
+  });
+}
+
+function addEmployee(){
+  const nameEl = document.getElementById('emp-new-name');
+  const wageEl = document.getElementById('emp-new-wage');
+  const name = (nameEl.value || '').trim();
+  const wage = parseInt((wageEl.value || '').replace(/[^0-9]/g, '')) || 0;
+  if(!name){ toast('직원 이름을 입력해주세요'); nameEl.focus(); return; }
+  if(wage <= 0){ toast('시급을 입력해주세요'); wageEl.focus(); return; }
+  if(wage < CFG.minWage){
+    if(!confirm('입력한 시급('+W(wage)+'원)이 2026년 최저시급('+W(CFG.minWage)+'원)보다 낮습니다.\n그래도 등록하시겠습니까?')) return;
+  }
+  if(state.employees.some(function(e){ return e.name === name; })){
+    if(!confirm('같은 이름("'+name+'")의 직원이 이미 있습니다. 그래도 추가하시겠습니까?')) return;
+  }
+  state.employees.push({ id: genId(), name: name, wage: wage, minDays: 5, taxType: 'ins4', grossNet: 'gross' });
+  nameEl.value = '';
+  wageEl.value = '';
+  save();
+  renderStaff();
+  toast('👤 '+name+'님이 등록되었습니다');
+}
+
+function updateEmpWage(id, raw){
+  const emp = getEmp(id);
+  if(!emp) return;
+  emp.wage = parseInt(String(raw).replace(/[^0-9]/g, '')) || 0;
+  save();
+}
+function setEmpMinDays(id, d){
+  const emp = getEmp(id);
+  if(!emp || d < 1 || d > 6) return;
+  emp.minDays = d;
+  save();
+  renderStaff();
+  toast(emp.name+'님 주휴 개근 기준: 주 '+d+'일');
+}
+function setEmpTaxType(id, t){
+  const emp = getEmp(id);
+  if(!emp) return;
+  emp.taxType = t;
+  save();
+  renderStaff();
+  toast(emp.name+'님 신고 유형: '+(t==='freelance'?'3.3% 사업소득 (프리랜서)':'4대보험 (근로소득)'));
+}
+
+function setEmpGrossNet(id, v){
+  const emp = getEmp(id);
+  if(!emp) return;
+  emp.grossNet = v;
+  save();
+  renderStaff();
+  toast(emp.name+'님 금액 기준: '+(v==='net'?'세후':'세전')+' (표시용 — 계산에는 미반영)');
+}
+
+function setStaffView(v){
+  state.staffView = v;
+  save();
+  renderStaff();
+}
+function retireEmployee(id){
+  const emp = getEmp(id);
+  if(!emp) return;
+  if(!confirm(emp.name+'님을 퇴사 처리하시겠습니까?\n\n출근 기록과 급여 명세서는 그대로 유지되며,\n퇴사자 명단에서 언제든 복귀시킬 수 있습니다.')) return;
+  emp.retired = true;
+  emp.retiredAt = fds(new Date());
+  save();
+  renderStaff();
+  toast(emp.name+'님이 퇴사 처리되었습니다 (기록 유지)');
+}
+function reinstateEmployee(id){
+  const emp = getEmp(id);
+  if(!emp) return;
+  emp.retired = false;
+  delete emp.retiredAt;
+  save();
+  renderStaff();
+  toast('↩️ '+emp.name+'님이 재직 명단으로 복귀했습니다');
+}
+function removeEmployee(id){
+  const emp = getEmp(id);
+  if(!emp) return;
+  let cnt = 0;
+  Object.keys(state.records).forEach(function(ds){ if(state.records[ds][id]) cnt++; });
+  const msg = cnt > 0
+    ? '⚠️ '+emp.name+'님을 완전히 삭제하시겠습니까?\n\n출근 기록 '+cnt+'일치와 급여 명세 내역이 모두 삭제되며\n되돌릴 수 없습니다. 지급이 끝난 기록이라면 삭제 전에\n백업 파일을 저장해 두세요.'
+    : emp.name+'님을 완전히 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.';
+  if(!confirm(msg)) return;
+  state.employees = state.employees.filter(function(e){ return e.id !== id; });
+  Object.keys(state.records).forEach(function(ds){
+    delete state.records[ds][id];
+    if(Object.keys(state.records[ds]).length === 0) delete state.records[ds];
+  });
+  if(state.stmtEmpId === id) state.stmtEmpId = '__all__';
+  save();
+  renderStaff();
+  toast(emp.name+'님이 삭제되었습니다');
+}
+
+function renderStaff(){
+  document.getElementById('biz-btn-under5').classList.toggle('on', !state.fiveOrMore);
+  document.getElementById('biz-btn-over5').classList.toggle('on', state.fiveOrMore);
+  const listEl = document.getElementById('emp-list');
+  const actives = state.employees.filter(function(e){ return !e.retired; });
+  const retirees = state.employees.filter(function(e){ return e.retired; });
+  const view = state.staffView === 'retired' ? 'retired' : 'active';
+
+  let html = '<div class="dp-mode-toggle" style="margin-bottom:11px">'+
+    '<button class="'+(view==='active'?'on':'')+'" onclick="setStaffView(\'active\')">👥 재직 중 ('+actives.length+')</button>'+
+    '<button class="'+(view==='retired'?'on':'')+'" onclick="setStaffView(\'retired\')">🚪 퇴사자 ('+retirees.length+')</button>'+
+  '</div>';
+
+  if(view === 'retired'){
+    if(retirees.length === 0){
+      html += '<div class="emp-empty">퇴사 처리된 직원이 없습니다.</div>';
+    }else{
+      retirees.forEach(function(e){
+        const color = empColor(e.id);
+        let cnt = 0;
+        Object.keys(state.records).forEach(function(ds){ if(state.records[ds][e.id]) cnt++; });
+        html += '<div class="emp-card retired">'+
+          '<div class="emp-card-top">'+
+            '<span class="emp-dot" style="background:'+color+'"></span>'+
+            '<span class="emp-name">'+esc(e.name)+' <span class="emp-retired-tag">퇴사</span></span>'+
+          '</div>'+
+          '<div class="emp-retired-info">퇴사일 '+(e.retiredAt||'-')+' · 출근 기록 '+cnt+'일치 보존 중 · 명세서에서 계속 조회 가능</div>'+
+          '<div class="emp-retired-btns">'+
+            '<button class="emp-back-btn" onclick="reinstateEmployee(\''+e.id+'\')">↩️ 복귀</button>'+
+            '<button class="emp-del" style="flex:1;padding:9px" onclick="removeEmployee(\''+e.id+'\')">🗑️ 완전 삭제</button>'+
+          '</div>'+
+        '</div>';
+      });
+    }
+    listEl.innerHTML = html;
+    return;
+  }
+
+  if(actives.length === 0){
+    html += '<div class="emp-empty">재직 중인 직원이 없습니다.<br>위에서 <strong>이름과 시급</strong>을 입력해 직원을 추가해주세요.</div>';
+    listEl.innerHTML = html;
+    return;
+  }
+  actives.forEach(function(e){
+    const color = empColor(e.id);
+    let daysBtns = '';
+    for(let d=2; d<=6; d++){
+      daysBtns += '<button class="emp-mind-btn'+(e.minDays===d?' on':'')+'" onclick="setEmpMinDays(\''+e.id+'\','+d+')">'+d+'일</button>';
+    }
+    html += '<div class="emp-card">'+
+      '<div class="emp-card-top">'+
+        '<span class="emp-dot" style="background:'+color+'"></span>'+
+        '<span class="emp-name">'+esc(e.name)+'</span>'+
+        '<button class="emp-del retire" onclick="retireEmployee(\''+e.id+'\')">퇴사</button>'+
+      '</div>'+
+      '<div class="emp-card-row">'+
+        '<span class="emp-row-label">시급</span>'+
+        '<div class="emp-wage-wrap"><input class="emp-wage-input" inputmode="numeric" value="'+(e.wage>0?e.wage.toLocaleString('ko-KR'):'')+'" onblur="renderStaff()" oninput="handleAmountInput(this, function(v){ updateEmpWage(\''+e.id+'\', v); })"><span class="emp-wage-suffix">원</span></div>'+
+      '</div>'+
+      '<div class="emp-card-row">'+
+        '<span class="emp-row-label">주휴 개근<br>기준</span>'+
+        '<div class="emp-mind-toggle">'+daysBtns+'</div>'+
+      '</div>'+
+      '<div class="emp-card-row">'+
+        '<span class="emp-row-label">신고 유형</span>'+
+        '<div class="emp-mind-toggle">'+
+          '<button class="emp-tax-btn'+(e.taxType!=='freelance'?' on':'')+'" onclick="setEmpTaxType(\''+e.id+'\',\'ins4\')">🏥 4대보험</button>'+
+          '<button class="emp-tax-btn'+(e.taxType==='freelance'?' on':'')+'" onclick="setEmpTaxType(\''+e.id+'\',\'freelance\')">📋 3.3%</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="emp-card-row">'+
+        '<span class="emp-row-label">금액 기준</span>'+
+        '<div class="emp-mind-toggle">'+
+          '<button class="emp-gn-btn'+(e.grossNet!=='net'?' on':'')+'" onclick="setEmpGrossNet(\''+e.id+'\',\'gross\')">세전</button>'+
+          '<button class="emp-gn-btn'+(e.grossNet==='net'?' on':'')+'" onclick="setEmpGrossNet(\''+e.id+'\',\'net\')">세후</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  });
+  listEl.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════
+// 📱 홈 화면 바로가기
+// ══════════════════════════════════════════════════════════════
+let _installPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  _installPrompt = e;  // 웹 호스팅(HTTPS) 시 원터치 설치 가능
+});
+window.addEventListener('appinstalled', function(){
+  _installPrompt = null;
+  toast('✅ 홈 화면에 앱이 설치되었습니다!\n이제 아이콘으로 열면 기록이 항상 유지됩니다');
+});
+function isStandalone(){
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+    || window.navigator.standalone === true;
+}
+
+function showHomeShortcut(){
+  // 이미 설치된 앱으로 실행 중
+  if(isStandalone()){
+    toast('✅ 이미 홈 화면 앱으로 사용 중입니다');
+    return;
+  }
+  // PWA 설치 가능 환경이면 바로 설치 프롬프트
+  if(_installPrompt){
+    _installPrompt.prompt();
+    _installPrompt.userChoice.then(function(res){
+      if(res.outcome === 'accepted') toast('✅ 홈 화면에 추가되었습니다');
+      _installPrompt = null;
+    });
+    return;
+  }
+  // 그 외: 브라우저 감지 후 단계 안내
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(ua);
+  const isSamsung = /SamsungBrowser/.test(ua);
+  const isChrome = /Chrome/.test(ua) && !isSamsung;
+  let steps;
+  if(isIOS){
+    steps = '<div class="hs-step"><span class="hs-num">1</span>화면 하단(또는 상단)의 <strong>공유 버튼</strong> <span class="hs-ic">⬆️</span> 을 누르세요</div>'+
+      '<div class="hs-step"><span class="hs-num">2</span>목록을 아래로 내려 <strong>"홈 화면에 추가"</strong>를 선택하세요</div>'+
+      '<div class="hs-step"><span class="hs-num">3</span>오른쪽 위 <strong>"추가"</strong>를 누르면 완료!</div>'+
+      '<div class="hs-tip">💡 사파리에서 연 상태에서만 메뉴가 보여요. 카카오톡 안에서 열었다면 사파리로 먼저 여세요.</div>';
+  }else if(isSamsung){
+    steps = '<div class="hs-step"><span class="hs-num">1</span>하단 <strong>메뉴(☰)</strong> 버튼을 누르세요</div>'+
+      '<div class="hs-step"><span class="hs-num">2</span><strong>"현재 페이지 추가"</strong> → <strong>"홈 화면"</strong>을 선택하세요 (⚠️ "앱 설치" 말고!)</div>'+
+      '<div class="hs-step"><span class="hs-num">3</span><strong>"추가"</strong>를 누르면 완료!</div>'+
+      '<div class="hs-tip">💡 삼성 인터넷의 "앱 설치"를 누르면 Google Play 프로텍트 경고가 뜰 수 있어요 — 앱의 문제가 아니라 삼성 인터넷 설치 방식의 알려진 현상입니다. <strong>"홈 화면"</strong>으로 추가하거나 <strong>크롬 브라우저</strong>에서 설치하면 경고 없이 됩니다.</div>';
+  }else if(isChrome){
+    steps = '<div class="hs-step"><span class="hs-num">1</span>오른쪽 위 <strong>점 3개(⋮) 메뉴</strong>를 누르세요</div>'+
+      '<div class="hs-step"><span class="hs-num">2</span><strong>"앱 설치"</strong> 또는 <strong>"홈 화면에 추가"</strong>를 선택하세요</div>'+
+      '<div class="hs-step"><span class="hs-num">3</span><strong>"설치"</strong>를 누르면 완료!</div>'+
+      '<div class="hs-tip">💡 처음 방문이라면 잠시 후 이 버튼을 다시 눌러보세요 — 준비가 끝나면 <strong>버튼 한 번으로 바로 설치창</strong>이 뜹니다.</div>';
+  }else{
+    steps = '<div class="hs-step"><span class="hs-num">1</span>브라우저 <strong>메뉴</strong>를 여세요</div>'+
+      '<div class="hs-step"><span class="hs-num">2</span><strong>"홈 화면에 추가"</strong> 또는 <strong>"바로가기 추가"</strong>를 찾아 선택하세요</div>';
+  }
+  document.getElementById('hs-steps').innerHTML = steps;
+  document.getElementById('hs-overlay').classList.add('show');
+}
+function closeHomeShortcut(){
+  document.getElementById('hs-overlay').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════════════
+// 💾 데이터 백업 / 복원
+// ══════════════════════════════════════════════════════════════
+function exportBackup(){
+  try{
+    const payload = {
+      app: 'partTimePayCalc',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      fiveOrMore: state.fiveOrMore,
+      employees: state.employees,
+      records: state.records
+    };
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const now = new Date();
+    const fname = '파트타임급여_백업_' + now.getFullYear() + p2(now.getMonth()+1) + p2(now.getDate()) + '.json';
+    // 모바일: Web Share 우선 (카톡 나에게 보내기 등으로 바로 보관 가능)
+    const file = new File([blob], fname, { type: 'application/json' });
+    if(navigator.canShare && navigator.canShare({ files: [file] })){
+      navigator.share({ files: [file], title: '파트타임 급여계산기 백업' }).then(function(){
+        toast('✅ 백업 파일이 공유되었습니다');
+      }).catch(function(){
+        downloadBackupBlob(blob, fname);
+      });
+    }else{
+      downloadBackupBlob(blob, fname);
+    }
+  }catch(err){
+    toast('백업 생성에 실패했습니다: ' + err.message);
+  }
+}
+function downloadBackupBlob(blob, fname){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 800);
+  toast('📥 백업 파일이 다운로드되었습니다');
+}
+function importBackup(inputEl){
+  const f = inputEl.files && inputEl.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    try{
+      const p = JSON.parse(reader.result);
+      if(!p || p.app !== 'partTimePayCalc' || !Array.isArray(p.employees) || typeof p.records !== 'object'){
+        toast('⚠️ 이 앱의 백업 파일이 아닙니다');
+        inputEl.value = '';
+        return;
+      }
+      const empCnt = p.employees.length;
+      const recCnt = Object.keys(p.records).length;
+      const when = p.exportedAt ? new Date(p.exportedAt).toLocaleDateString('ko-KR') : '알 수 없음';
+      if(!confirm('백업을 불러오면 현재 데이터를 덮어씁니다.\n\n· 백업 시점: '+when+'\n· 직원 '+empCnt+'명 / 기록 '+recCnt+'일치\n\n계속하시겠습니까?')){
+        inputEl.value = '';
+        return;
+      }
+      state.fiveOrMore = !!p.fiveOrMore;
+      state.employees = p.employees.filter(function(e){ return e && e.id && typeof e.name === 'string'; });
+      state.records = (p.records && typeof p.records === 'object') ? p.records : {};
+      state.selectedDate = null;
+      state.stmtEmpId = '__all__';
+      save();
+      renderStaff(); renderCal(); renderStmt();
+      toast('✅ 백업 복원 완료 — 직원 '+state.employees.length+'명, 기록 '+Object.keys(state.records).length+'일치');
+    }catch(err){
+      toast('⚠️ 파일을 읽을 수 없습니다: ' + err.message);
+    }
+    inputEl.value = '';
+  };
+  reader.readAsText(f);
+}
+
+// ══════════════════════════════════════════════════════════════
+// 🗓️ 출근부 달력 (날짜 중심 입력)
+// ══════════════════════════════════════════════════════════════
+function recH(rec){
+  if(!rec) return 0;
+  if(rec.mode === 'absent' || rec.mode === 'paid') return 0;
+  if(rec.mode === 'hours') return Math.max(0, (parseFloat(rec.hours) || 0) - (rec.brk || 0)/60);
+  return calcDayH(rec.start, rec.end, rec.brk || 0);
+}
+function recNight(rec){
+  if(!rec || rec.mode !== 'time') return 0;
+  return dayNightH(rec.start, rec.end);
+}
+function getRec(ds, empId){
+  return (state.records[ds] || {})[empId] || null;
+}
+function setRec(ds, empId, rec){
+  if(!state.records[ds]) state.records[ds] = {};
+  state.records[ds][empId] = rec;
+}
+function delRec(ds, empId){
+  if(state.records[ds]){
+    delete state.records[ds][empId];
+    if(Object.keys(state.records[ds]).length === 0) delete state.records[ds];
+  }
+}
+// 해당 직원의 ds 이전 가장 최근 기록 (60일 내)
+function lastRecBefore(empId, ds){
+  const keys = Object.keys(state.records).filter(function(k){
+    return k < ds && state.records[k][empId];
+  }).sort();
+  if(keys.length === 0) return null;
+  const lastKey = keys[keys.length-1];
+  const gap = (new Date(ds) - new Date(lastKey)) / 86400000;
+  if(gap > 60) return null;
+  return JSON.parse(JSON.stringify(state.records[lastKey][empId]));
+}
+
+function renderCal(){
+  renderCalGrid();
+  renderCalSummary();
+  renderDayPanel();
+}
+
+function renderCalGrid(){
+  const yr = state.yr, mo = state.mo;
+  document.getElementById('cal-nav-text').textContent = yr + '년 ' + (mo+1) + '월';
+  const totalDays = new Date(yr, mo+1, 0).getDate();
+  document.getElementById('cal-nav-sub').textContent = '총 '+totalDays+'일';
+
+  const firstDay = new Date(yr, mo, 1);
+  const startDow = firstDay.getDay();
+  const grid = document.getElementById('cal-grid');
+  let html = '';
+  for(let i=0; i<startDow; i++){ html += '<div class="mo-cal-cell empty"></div>'; }
+  for(let d=1; d<=totalDays; d++){
+    const dt = new Date(yr, mo, d);
+    const ds = fds(dt);
+    const dow = dt.getDay();
+    const dayRecs = state.records[ds] || {};
+    let cnt = 0, totH = 0;
+    state.employees.forEach(function(e){
+      const h = recH(dayRecs[e.id]);
+      if(h > 0){ cnt++; totH += h; }
+    });
+    const hol = getHoliday(ds);
+    const isSelected = state.selectedDate === ds;
+    let cls = 'mo-cal-cell';
+    if(cnt > 0) cls += ' work';
+    if(hol) cls += ' holiday';
+    if(isSelected) cls += ' selected';
+    const dowCls = dow === 0 ? ' sun' : (dow === 6 ? ' sat' : '');
+    const holShort = hol ? hol.substring(0, 2) : '';
+    const hR = Math.round(totH*10)/10;
+    const hDisp = hR % 1 === 0 ? hR : hR.toFixed(1);
+    html += '<div class="'+cls+'" onclick="openDay(\''+ds+'\')">'+
+      (hol ? '<div class="mo-cal-holiday-tag">'+holShort+'</div>' : '')+
+      '<div class="mo-cal-day'+dowCls+'">'+d+'</div>'+
+      (cnt > 0 ? '<div class="st-cal-cnt">'+cnt+'명</div><div class="mo-cal-hours">'+hDisp+'h</div>' : '')+
+    '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+function renderCalSummary(){
+  let manDays = 0, totH = 0, totPay = 0, activeEmps = 0;
+  const prefix = state.yr + '-' + p2(state.mo+1) + '-';
+  state.employees.forEach(function(e){
+    let worked = false;
+    Object.keys(state.records).forEach(function(ds){
+      if(ds.indexOf(prefix) !== 0) return;
+      const h = recH(state.records[ds][e.id]);
+      if(h > 0){ manDays++; totH += h; worked = true; }
+    });
+    if(worked){
+      activeEmps++;
+      totPay += calcEmpMonth(e, state.yr, state.mo).total;
+    }
+  });
+  const hR = Math.round(totH*10)/10;
+  document.getElementById('cal-sum-emps').textContent = activeEmps + '명';
+  document.getElementById('cal-sum-days').textContent = manDays + '일';
+  document.getElementById('cal-sum-h').textContent = (hR % 1 === 0 ? hR : hR.toFixed(1)) + 'h';
+  document.getElementById('cal-sum-pay').textContent = W(totPay) + '원';
+}
+
+function openDay(ds){
+  state.selectedDate = (state.selectedDate === ds) ? null : ds;
+  save();
+  renderCal();
+  if(state.selectedDate){
+    setTimeout(function(){
+      const panel = document.getElementById('day-panel');
+      if(panel && panel.scrollIntoView) panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }, 80);
+  }
+}
+function closeDayPanel(){
+  state.selectedDate = null;
+  save();
+  renderCal();
+}
+
+function renderDayPanel(){
+  const panel = document.getElementById('day-panel');
+  const ds = state.selectedDate;
+  if(!ds){ panel.classList.remove('show'); panel.innerHTML=''; return; }
+  const parts = ds.split('-').map(Number);
+  const dt = new Date(parts[0], parts[1]-1, parts[2]);
+  const dow = dt.getDay();
+  const dowName = ['일','월','화','수','목','금','토'][dow];
+  const hol = getHoliday(ds);
+  const dowCls = (dow === 0 || hol) ? ' sun' : (dow === 6 ? ' sat' : '');
+
+  let html = '<div class="dp-head">'+
+    '<div class="dp-title">'+parts[1]+'월 '+parts[2]+'일 <span class="dp-dow'+dowCls+'">'+dowName+'요일'+(hol?' · '+hol:'')+'</span></div>'+
+    '<button class="dp-close" onclick="closeDayPanel()">닫기 ✕</button>'+
+  '</div>';
+
+  if(hol && state.fiveOrMore){
+    html += '<div class="dp-hol-note">🎌 <strong>'+hol+'</strong> — 5인 이상 사업장은 유급휴일입니다. 소정근로일에 쉰 직원은 <strong>유급휴가</strong>로 시간을 입력하면 유급·개근이 반영됩니다. 근무한 직원은 가산수당이 자동 적용됩니다.</div>';
+  }
+
+  if(state.employees.length === 0){
+    html += '<div class="dp-empty">등록된 직원이 없습니다.<br><button class="dp-goto-staff" onclick="switchTab(\'staff\')">👥 직원 등록하러 가기</button></div>';
+    panel.innerHTML = html;
+    panel.classList.add('show');
+    return;
+  }
+
+  const panelEmps = state.employees.filter(function(e){ return !e.retired || getRec(ds, e.id); });
+  panelEmps.forEach(function(e){
+    const rec = getRec(ds, e.id);
+    const isAbsent = rec && rec.mode === 'absent';
+    const isPaid = rec && rec.mode === 'paid';
+    const working = !!rec && !isAbsent && !isPaid;
+    const color = empColor(e.id);
+    let sumTxt, sumCls = '';
+    if(working){ sumTxt = Hfmt(recH(rec)); }
+    else if(isAbsent){ sumTxt = '❌ 무단결근'; sumCls = ' absent'; }
+    else if(isPaid){ sumTxt = '🌴 유급휴가 '+Hfmt(parseFloat(rec.hours)||0); sumCls = ' paid'; }
+    else { sumTxt = ''; }
+    html += '<div class="dp-emp'+(working?' work':'')+(isAbsent?' absent':'')+(isPaid?' paid':'')+'">'+
+      '<div class="dp-emp-head" onclick="toggleEmpWork(\''+e.id+'\')">'+
+        '<span class="emp-dot" style="background:'+color+'"></span>'+
+        '<span class="dp-emp-name">'+esc(e.name)+(e.retired?' <span class="emp-retired-tag">퇴사</span>':'')+'</span>'+
+        '<span class="dp-emp-sum'+sumCls+'" data-emp-sum="'+e.id+'">'+sumTxt+'</span>'+
+        '<div class="day-toggle dp-tg"></div>'+
+      '</div>';
+    if(!rec){
+      // 휴무: 결근/유급휴가 처리 버튼
+      html += '<div class="dp-status-row">'+
+        '<button class="dp-status-btn abs" onclick="setEmpStatus(\''+e.id+'\',\'absent\')">❌ 무단결근</button>'+
+        '<button class="dp-status-btn pd" onclick="setEmpStatus(\''+e.id+'\',\'paid\')">🌴 유급휴가</button>'+
+      '</div>';
+    }else if(isAbsent){
+      html += '<div class="dp-emp-body">'+
+        '<div class="dp-hours-note" style="color:#dc2626">❌ 무단결근 — 이번 주 주휴수당이 발생하지 않습니다 (개근 상실)</div>'+
+        '<button class="dp-status-btn clear" onclick="setEmpStatus(\''+e.id+'\',\'off\')">휴무로 되돌리기</button>'+
+      '</div>';
+    }else if(isPaid){
+      const pv = parseFloat(rec.hours) || 0;
+      html += '<div class="dp-emp-body">'+
+        '<div class="dp-hours-row">'+
+          '<input class="dp-hours-input" type="number" inputmode="decimal" min="0" max="24" step="0.5" value="'+(pv>0?pv:'')+'" placeholder="0" data-df="paid-'+e.id+'" onchange="updPaidHours(\''+e.id+'\', this.value)">'+
+          '<span class="dp-hours-suffix">시간 유급</span>'+
+          '<div class="brk-presets">'+
+            [4,5,6,8].map(function(n){ return '<button class="brk-preset" onclick="updPaidHours(\''+e.id+'\','+n+')">'+n+'h</button>'; }).join('')+
+        '</div></div>'+
+        '<div class="dp-hours-note" style="color:#059669">🌴 유급휴가 — 개근으로 인정되고 기본급에 포함됩니다 (연장·야간 계산에서는 제외)</div>'+
+        '<button class="dp-status-btn clear" onclick="setEmpStatus(\''+e.id+'\',\'off\')">휴무로 되돌리기</button>'+
+      '</div>';
+    }
+    if(working){
+      html += '<div class="dp-emp-body">';
+      // 모드 전환 (5인 이상은 시각 입력 고정 — 연장·야간 수당 계산에 필요)
+      if(!state.fiveOrMore){
+        html += '<div class="dp-mode-toggle">'+
+          '<button class="'+(rec.mode!=='hours'?'on':'')+'" onclick="setRecMode(\''+e.id+'\',\'time\')">🕐 출퇴근 시각</button>'+
+          '<button class="'+(rec.mode==='hours'?'on':'')+'" onclick="setRecMode(\''+e.id+'\',\'hours\')">⏱️ 일한 시간만</button>'+
+        '</div>';
+      }else if(rec.mode === 'hours'){
+        html += '<div class="dp-hours-note">⚠️ 5인 이상 사업장은 연장·야간 수당 계산을 위해 출퇴근 시각 입력이 필요합니다. '+
+          '<button class="dp-convert-btn" onclick="setRecMode(\''+e.id+'\',\'time\')">🕐 시각 입력으로 전환</button></div>';
+      }
+      if(rec.mode === 'hours'){
+        const hv = parseFloat(rec.hours) || 0;
+        html += '<div class="dp-hours-row">'+
+          '<input class="dp-hours-input" type="number" inputmode="decimal" min="0" max="24" step="0.5" value="'+(hv>0?hv:'')+'" placeholder="0" data-df="hours-'+e.id+'" onchange="updRecHours(\''+e.id+'\', this.value)">'+
+          '<span class="dp-hours-suffix">시간</span>'+
+          '<div class="brk-presets">'+
+            [3,4,5,6,8].map(function(n){ return '<button class="brk-preset" onclick="updRecHours(\''+e.id+'\','+n+')">'+n+'h</button>'; }).join('')+
+          '</div>'+
+        '</div>'+
+        '<div class="brk-row" style="margin-top:8px">'+
+          '<span class="brk-label">휴게</span>'+
+          '<input class="brk-input" type="number" inputmode="numeric" min="0" max="480" value="'+(rec.brk||0)+'" data-df="brk-'+e.id+'" onchange="updRecBrk(\''+e.id+'\', this.value)">'+
+          '<span class="brk-suffix">분</span>'+
+          '<div class="brk-presets">'+
+            [0,30,60,90].map(function(n){ return '<button class="brk-preset" onclick="updRecBrk(\''+e.id+'\','+n+')">'+n+'분</button>'; }).join('')+
+          '</div>'+
+        '</div>';
+      }else{
+        const sp = (rec.start||'09:00').split(':');
+        const ep = (rec.end||'18:00').split(':');
+        html += '<div class="time-row">'+
+          '<div class="time-field"><span class="time-field-label">출근</span>'+
+            '<div class="time-picker">'+
+              '<input class="time-part" type="number" inputmode="numeric" min="0" max="23" value="'+sp[0]+'" data-df="sh-'+e.id+'" onchange="updRecTime(\''+e.id+'\',\'sh\',this.value)"><span class="time-colon">:</span>'+
+              '<input class="time-part" type="number" inputmode="numeric" min="0" max="59" value="'+sp[1]+'" data-df="sm-'+e.id+'" onchange="updRecTime(\''+e.id+'\',\'sm\',this.value)">'+
+            '</div></div>'+
+          '<div class="time-field"><span class="time-field-label">퇴근</span>'+
+            '<div class="time-picker">'+
+              '<input class="time-part" type="number" inputmode="numeric" min="0" max="23" value="'+ep[0]+'" data-df="eh-'+e.id+'" onchange="updRecTime(\''+e.id+'\',\'eh\',this.value)"><span class="time-colon">:</span>'+
+              '<input class="time-part" type="number" inputmode="numeric" min="0" max="59" value="'+ep[1]+'" data-df="em-'+e.id+'" onchange="updRecTime(\''+e.id+'\',\'em\',this.value)">'+
+            '</div></div>'+
+        '</div>'+
+        '<div class="brk-row">'+
+          '<span class="brk-label">휴게</span>'+
+          '<input class="brk-input" type="number" inputmode="numeric" min="0" max="480" value="'+(rec.brk||0)+'" data-df="brk-'+e.id+'" onchange="updRecBrk(\''+e.id+'\', this.value)">'+
+          '<span class="brk-suffix">분</span>'+
+          '<div class="brk-presets">'+
+            [0,30,60,90].map(function(n){ return '<button class="brk-preset" onclick="updRecBrk(\''+e.id+'\','+n+')">'+n+'분</button>'; }).join('')+
+          '</div>'+
+        '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+
+  panel.innerHTML = html;
+  panel.classList.add('show');
+}
+
+// iOS 사파리 대응: 입력 중에는 패널을 다시 그리지 않고 부분 갱신 (재렌더 시 포커스/키보드 소실 방지)
+function refreshAfterRecEdit(empId){
+  save();
+  renderCalGrid();
+  renderCalSummary();
+  const ds = state.selectedDate;
+  const rec = getRec(ds, empId);
+  const sumEl = document.querySelector('#day-panel [data-emp-sum="'+empId+'"]');
+  if(sumEl && rec){
+    if(rec.mode === 'paid') sumEl.textContent = '🌴 유급휴가 '+Hfmt(Math.max(0, parseFloat(rec.hours)||0));
+    else if(rec.mode !== 'absent') sumEl.textContent = Hfmt(recH(rec));
+  }
+}
+function syncDayField(empId, field, val){
+  const el = document.querySelector('#day-panel [data-df="'+field+'-'+empId+'"]');
+  if(el && String(el.value) !== String(val)) el.value = val;
+}
+
+function toggleEmpWork(empId){
+  const ds = state.selectedDate;
+  if(!ds) return;
+  const rec = getRec(ds, empId);
+  if(rec && (rec.mode === 'absent' || rec.mode === 'paid')){
+    // 결근/유급휴가 → 근무로 전환
+    let last = lastRecBefore(empId, ds);
+    if(last && (last.mode === 'absent' || last.mode === 'paid')) last = null;
+    if(last && last.mode === 'hours' && state.fiveOrMore) last = null;
+    setRec(ds, empId, last || { mode:'time', start:'09:00', end:'18:00', brk:60 });
+    save(); renderCal();
+    toast('출근으로 변경됨');
+    return;
+  }
+  if(rec){
+    delRec(ds, empId);
+    toast('휴무 처리됨');
+  }else{
+    let last = lastRecBefore(empId, ds);
+    if(last && (last.mode === 'absent' || last.mode === 'paid')) last = null;
+    if(last && last.mode === 'hours' && state.fiveOrMore) last = null;
+    setRec(ds, empId, last || { mode:'time', start:'09:00', end:'18:00', brk:60 });
+    toast(last ? '지난 근무와 동일하게 입력됨 (수정 가능)' : '출근 체크됨');
+  }
+  save();
+  renderCal();
+}
+function setEmpStatus(empId, status){
+  const ds = state.selectedDate;
+  if(!ds) return;
+  if(status === 'off'){
+    delRec(ds, empId);
+    toast('휴무 처리됨');
+  }else if(status === 'absent'){
+    setRec(ds, empId, { mode:'absent' });
+    toast('❌ 무단결근 처리 — 해당 주 주휴 미발생');
+  }else if(status === 'paid'){
+    setRec(ds, empId, { mode:'paid', hours: 8 });
+    toast('🌴 유급휴가 처리 — 시간을 확인해주세요');
+  }
+  save();
+  renderCal();
+}
+function updPaidHours(empId, v){
+  const ds = state.selectedDate;
+  const rec = getRec(ds, empId);
+  if(!rec || rec.mode !== 'paid') return;
+  let n = parseFloat(v);
+  if(isNaN(n) || n < 0) n = 0;
+  if(n > 24) n = 24;
+  rec.hours = Math.round(n*10)/10;
+  syncDayField(empId, 'paid', rec.hours > 0 ? rec.hours : '');
+  refreshAfterRecEdit(empId);
+}
+
+function setRecMode(empId, mode){
+  const ds = state.selectedDate;
+  const rec = getRec(ds, empId);
+  if(!rec || rec.mode === mode) return;
+  if(mode === 'hours' && state.fiveOrMore){
+    toast('⚠️ 5인 이상 사업장은 연장·야간 수당 계산을 위해\n출퇴근 시각으로 입력해주세요');
+    return;
+  }
+  if(mode === 'hours'){
+    const h = Math.round(recH(rec)*10)/10;
+    setRec(ds, empId, { mode:'hours', hours: h > 0 ? h : 8 });
+  }else{
+    setRec(ds, empId, { mode:'time', start:'09:00', end:'18:00', brk:60 });
+  }
+  save();
+  renderCal();
+}
+function updRecHours(empId, v){
+  const ds = state.selectedDate;
+  const rec = getRec(ds, empId);
+  if(!rec) return;
+  let h = parseFloat(v);
+  if(isNaN(h) || h < 0) h = 0;
+  if(h > 24) h = 24;
+  rec.hours = Math.round(h*10)/10;
+  syncDayField(empId, 'hours', rec.hours > 0 ? rec.hours : '');
+  refreshAfterRecEdit(empId);
+}
+function updRecTime(empId, part, v){
+  const ds = state.selectedDate;
+  const rec = getRec(ds, empId);
+  if(!rec) return;
+  let n = parseInt(v);
+  const maxV = (part === 'sh' || part === 'eh') ? 23 : 59;
+  if(isNaN(n) || n < 0) n = 0;
+  if(n > maxV) n = maxV;
+  const val = p2(n);
+  const sp = (rec.start||'09:00').split(':');
+  const ep = (rec.end||'18:00').split(':');
+  if(part === 'sh') rec.start = val+':'+sp[1];
+  else if(part === 'sm') rec.start = sp[0]+':'+val;
+  else if(part === 'eh') rec.end = val+':'+ep[1];
+  else rec.end = ep[0]+':'+val;
+  syncDayField(empId, part, val);
+  refreshAfterRecEdit(empId);
+}
+function updRecBrk(empId, v){
+  const ds = state.selectedDate;
+  const rec = getRec(ds, empId);
+  if(!rec) return;
+  let n = parseInt(v);
+  if(isNaN(n) || n < 0) n = 0;
+  if(n > 480) n = 480;
+  rec.brk = n;
+  syncDayField(empId, 'brk', n);
+  refreshAfterRecEdit(empId);
+}
+
+// ══════════════════════════════════════════════════════════════
+// 💰 직원별 급여 계산 (기존 calcMoWeekPay 로직 파라미터화)
+// ══════════════════════════════════════════════════════════════
+function calcEmpWeekPay(emp, wkDates, opts){
+  const wage = parseInt(emp.wage) || 0;
+  const fiveOrMore = state.fiveOrMore;
+  let totH=0, ngtH=0, wd=0, dailyOtSum=0;
+  let paidH=0, hasAbsent=false;
+  let fullWeekH=0, fullWeekDailyOt=0;
+  let holH=0, holH8under=0, holH8over=0;
+  let laborDayHWork=0;
+  const targetDates = opts && opts.onlyDates ? opts.onlyDates : null;
+
+  wkDates.forEach(function(d){
+    const ds = fds(d);
+    const rec = getRec(ds, emp.id);
+    const isAbsent = rec && rec.mode === 'absent';
+    const isPaid = rec && rec.mode === 'paid';
+    const ph = isPaid ? Math.max(0, parseFloat(rec.hours) || 0) : 0;
+    const h = (isAbsent || isPaid) ? 0 : recH(rec);
+    const nh = (isAbsent || isPaid) ? 0 : recNight(rec);
+    const isHol = !!getHoliday(ds);
+    const isLabor = isLaborDay(ds);
+    const dow = d.getDay();
+
+    if(isAbsent) hasAbsent = true;  // 주 내 무단결근 → 개근 상실
+
+    if(h > 0 || ph > 0) wd++;
+    fullWeekH += h + ph;
+    if(fiveOrMore) fullWeekDailyOt += Math.max(0, h - CFG.otThresh);
+
+    if(!targetDates || targetDates.has(ds)){
+      if(h > 0){ totH += h; ngtH += nh; }
+      if(ph > 0) paidH += ph;
+      if(fiveOrMore) dailyOtSum += Math.max(0, h - CFG.otThresh);
+      if(h>0 && fiveOrMore && isHol && dow !== 0){
+        holH += h;
+        holH8under += Math.min(h, CFG.otThresh);
+        holH8over += Math.max(0, h - CFG.otThresh);
+      }
+      if(isLabor && h>0 && !fiveOrMore) laborDayHWork += h;
+    }
+  });
+
+  let dotH = 0;
+  if(fiveOrMore){
+    const weeklyOt = Math.max(0, (fullWeekH - paidH) - CFG.stdW);  // 연장은 실근로 기준
+    if(targetDates){
+      const fullWeekOt = Math.max(fullWeekDailyOt, weeklyOt);
+      const realFullH = fullWeekH - paidH;
+      const ratio = realFullH > 0 ? totH/realFullH : 0;
+      dotH = Math.max(dailyOtSum, fullWeekOt * ratio);
+    }else{
+      dotH = Math.max(dailyOtSum, weeklyOt);
+    }
+  }
+
+  // 초단시간 (주 15h 미만, 유급휴가 포함) 주휴 미적용 — 근로기준법 제18조 제3항
+  const under15 = fullWeekH < CFG.minH;
+  const elig = (wd >= (emp.minDays || 5)) && !under15 && !hasAbsent;
+  const base = Math.round(totH * wage);
+  const paidPay = Math.round(paidH * wage);
+  const otEx = fiveOrMore ? Math.round(dotH * wage * CFG.otRate) : 0;
+  const nEx = fiveOrMore ? Math.round(ngtH * wage * CFG.nightRate) : 0;
+  const holEx = fiveOrMore ? Math.round((holH8under*1.5 + holH8over*2.0) * wage) : 0;
+  const laborDayPay = Math.round(laborDayHWork * wage);
+
+  if(opts && opts.skipHp){
+    return { totH:totH, ngtH:ngtH, dotH:dotH, holH:holH, wd:wd, elig:false, under15:under15, fullWeekH:fullWeekH, hasAbsent:hasAbsent, paidH:paidH, paidPay:paidPay,
+      base:base, otEx:otEx, nEx:nEx, holEx:holEx, laborDayPay:laborDayPay,
+      hp:0, hpH:0, total: base+paidPay+otEx+nEx+holEx+laborDayPay };
+  }
+
+  const thisMoH = totH + paidH;
+  const hpBaseH = targetDates && fullWeekH > thisMoH ? fullWeekH : thisMoH;
+  const hpH = elig ? Math.min(hpBaseH, CFG.stdW)/CFG.stdW * CFG.maxHolH : 0;
+  const hp = Math.round(hpH * wage);
+
+  return { totH:totH, ngtH:ngtH, dotH:dotH, holH:holH, wd:wd, elig:elig, under15:under15, fullWeekH:fullWeekH, hasAbsent:hasAbsent, paidH:paidH, paidPay:paidPay,
+    base:base, otEx:otEx, nEx:nEx, holEx:holEx, laborDayPay:laborDayPay,
+    hp:hp, hpH:hpH, total: base+paidPay+otEx+nEx+holEx+laborDayPay+hp };
+}
+
+function calcEmpMonth(emp, yr, mo){
+  const weeks = getMoWeeks(yr, mo);
+  const moDatesSet = new Set(getMoDates(yr, mo).map(function(d){ return fds(d); }));
+  let totH=0, ngtH=0, dotH=0, holH=0, wd=0, hpH=0, paidH=0;
+  let base=0, otEx=0, nEx=0, holEx=0, laborDayPay=0, hp=0, paidPay=0;
+
+  weeks.forEach(function(wk, i){
+    const isLastWeek = (i === weeks.length - 1);
+    const lastDayOfWeek = wk[6];
+    const lastWeekCrosses = isLastWeek && (lastDayOfWeek.getMonth() !== mo || lastDayOfWeek.getFullYear() !== yr);
+    const skipHp = isLastWeek && lastWeekCrosses;
+    const w = calcEmpWeekPay(emp, wk, { onlyDates: moDatesSet, skipHp: skipHp });
+    totH += w.totH; ngtH += w.ngtH; dotH += w.dotH; holH += (w.holH||0); wd += w.wd;
+    paidH += w.paidH; paidPay += w.paidPay;
+    base += w.base; otEx += w.otEx; nEx += w.nEx;
+    holEx += (w.holEx||0); laborDayPay += (w.laborDayPay||0);
+    hp += w.hp; hpH += w.hpH;
+  });
+
+  return { totH:totH, ngtH:ngtH, dotH:dotH, holH:holH, wd:wd, paidH:paidH, paidPay:paidPay,
+    base:base, otEx:otEx, nEx:nEx, holEx:holEx, laborDayPay:laborDayPay,
+    hp:hp, hpH:hpH, total: base+paidPay+otEx+nEx+holEx+laborDayPay+hp };
+}
+
+// 해당 월에 hours 모드 기록이 있는지 (야간 미반영 안내)
+function empHasHoursMode(emp, yr, mo){
+  const prefix = yr + '-' + p2(mo+1) + '-';
+  return Object.keys(state.records).some(function(ds){
+    if(ds.indexOf(prefix) !== 0) return false;
+    const rec = state.records[ds][emp.id];
+    return rec && rec.mode === 'hours';
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// 📄 명세서
+// ══════════════════════════════════════════════════════════════
+function updChipsBar(){
+  const el = document.getElementById('stmt-chips');
+  const bar = document.getElementById('stmt-chipbar');
+  const thumb = document.getElementById('stmt-chipbar-thumb');
+  if(!el || !bar || !thumb) return;
+  if(el.scrollWidth <= el.clientWidth + 2){ bar.style.display = 'none'; return; }
+  bar.style.display = '';
+  const ratio = el.clientWidth / el.scrollWidth;
+  const maxScroll = el.scrollWidth - el.clientWidth;
+  const pos = maxScroll > 0 ? el.scrollLeft / maxScroll : 0;
+  const thumbW = Math.max(ratio * 100, 12);
+  thumb.style.width = thumbW + '%';
+  thumb.style.left = (pos * (100 - thumbW)) + '%';
+}
+
+function setStmtEmp(id){
+  state.stmtEmpId = id;
+  save();
+  renderStmt();
+}
+
+function renderStmt(){
+  document.getElementById('stmt-nav-text').textContent = state.yr + '년 ' + (state.mo+1) + '월';
+  const chipsEl = document.getElementById('stmt-chips');
+  let chips = '<button class="st-chip'+(state.stmtEmpId==='__all__'?' on':'')+'" onclick="setStmtEmp(\'__all__\')">📊 전체 요약</button>';
+  const chipMoPrefix = state.yr + '-' + p2(state.mo+1) + '-';
+  state.employees.forEach(function(e){
+    if(e.retired){
+      const hasRec = Object.keys(state.records).some(function(ds){ return ds.indexOf(chipMoPrefix) === 0 && state.records[ds][e.id]; });
+      if(!hasRec) return;
+    }
+    chips += '<button class="st-chip'+(state.stmtEmpId===e.id?' on':'')+'" onclick="setStmtEmp(\''+e.id+'\')"><span class="emp-dot sm" style="background:'+empColor(e.id)+'"></span>'+esc(e.name)+(e.retired?' (퇴사)':'')+'</button>';
+  });
+  chipsEl.innerHTML = chips;
+  setTimeout(updChipsBar, 50);
+
+  const body = document.getElementById('stmt-body');
+  const shareWrap = document.getElementById('stmt-share-wrap');
+
+  if(state.employees.length === 0){
+    body.innerHTML = '<div class="emp-empty">등록된 직원이 없습니다.<br><strong>직원</strong> 탭에서 먼저 직원을 등록해주세요.</div>';
+    shareWrap.style.display = 'none';
+    return;
+  }
+
+  if(state.stmtEmpId === '__all__' || !getEmp(state.stmtEmpId)){
+    renderStmtAll(body);
+  }else{
+    renderStmtEmp(body, getEmp(state.stmtEmpId));
+  }
+  shareWrap.style.display = '';
+}
+
+function renderStmtAll(body){
+  const yr = state.yr, mo = state.mo;
+  let rows = '', grand = 0, grandH = 0, grandWd = 0, anyWork = false;
+  state.employees.forEach(function(e){
+    const r = calcEmpMonth(e, yr, mo);
+    if(r.wd === 0) return;
+    anyWork = true;
+    const isFl = e.taxType === 'freelance';
+    const amt = r.total, mark = '';
+    grand += amt; grandH += r.totH + r.paidH; grandWd += r.wd;
+    const cH = function(x){ const v = Math.round(x*10)/10; return (v%1===0?v:v.toFixed(1))+'h'; };
+    rows += '<tr><td class="st-sum-name"><span class="emp-dot sm" style="background:'+empColor(e.id)+'"></span>'+esc(e.name)+(e.retired?' <span class="emp-retired-tag">퇴사</span>':'')+'<span class="st-tax-tag '+(isFl?'fl':'in4')+'">'+(isFl?'3.3%':'4대')+' '+(e.grossNet==='net'?'세후':'세전')+'</span></td>'+
+      '<td class="muted nw">'+r.wd+'일</td>'+
+      '<td class="muted nw">'+cH(r.totH + r.paidH)+'</td>'+
+      '<td class="amt nw">'+W(amt)+'원'+mark+'</td></tr>';
+  });
+
+  if(!anyWork){
+    body.innerHTML = '<div class="emp-empty">'+(mo+1)+'월 출근 기록이 없습니다.<br><strong>출근부</strong> 탭에서 날짜를 눌러 근무를 입력해주세요.</div>';
+    return;
+  }
+
+  let html = '<div class="ws-namebanner">'+
+    '<span class="ws-name">'+yr+'년 '+(mo+1)+'월</span><span class="ws-namesuffix"> 인건비 요약</span>'+
+  '</div>';
+  html += '<div class="ws-totals" style="grid-template-columns:1fr">'+
+    '<div class="ws-total-block monthly">'+
+      '<div class="ws-total-label">💰 '+(mo+1)+'월 총 인건비</div>'+
+      '<div class="ws-total-val" style="font-size:26px">'+W(grand)+'원</div>'+
+    '</div>'+
+  '</div>';
+  html += '<div class="ws-breakdown-wrap"><div class="pi-breakdown" style="margin-bottom:0">'+
+    '<div class="pi-breakdown-h">👥 직원별 급여</div>'+
+    '<table>'+
+      '<thead><tr><th>직원</th><th>근무일</th><th>시간</th><th>급여</th></tr></thead>'+
+      '<tbody>'+rows+
+        '<tr class="total"><td>합계</td><td class="nw">'+grandWd+'일</td><td class="nw">'+(Math.round(grandH*10)/10)+'h</td><td class="nw">'+W(grand)+'원</td></tr>'+
+      '</tbody>'+
+    '</table>'+
+  '</div></div>';
+  html += '<div class="st-stmt-note">'+(state.fiveOrMore?'5인 이상 사업장 기준 (연장·야간·공휴일 가산 포함)':'5인 미만 사업장 기준 (가산수당 미적용, 노동절 제외)')+' · 주휴수당 포함 · 세전/세후 표기는 직원별 설정 (표시용 — 공제·정산은 세무 신고 시)</div>';
+  body.innerHTML = html;
+}
+
+// 주차별 주휴 내역 (이월 표시 포함)
+function buildWeeklyHpRows(emp, yr, mo){
+  const weeks = getMoWeeks(yr, mo);
+  const moDatesSet = new Set(getMoDates(yr, mo).map(function(d){ return fds(d); }));
+  let rows = '', carryOut = false, carryIn = false;
+  weeks.forEach(function(wk, i){
+    const isLastWeek = (i === weeks.length - 1);
+    const lastWeekCrosses = isLastWeek && (wk[6].getMonth() !== mo || wk[6].getFullYear() !== yr);
+    const skipHp = isLastWeek && lastWeekCrosses;
+    const firstWeekCrosses = (i === 0) && (wk[0].getMonth() !== mo || wk[0].getFullYear() !== yr);
+    const r = calcEmpWeekPay(emp, wk, { onlyDates: moDatesSet, skipHp: skipHp });
+    if(r.fullWeekH <= 0) return;  // 근무 없는 주는 표시 생략
+    const range = (wk[0].getMonth()+1)+'/'+wk[0].getDate()+'~'+(wk[6].getMonth()+1)+'/'+wk[6].getDate();
+    const hR = Math.round(r.fullWeekH*10)/10;
+    let status;
+    if(skipHp){
+      carryOut = true;
+      status = '<span class="st-hp-badge carry">→ 다음달 이월</span>';
+    }else if(r.elig){
+      status = '<span class="st-hp-badge ok">'+W(r.hp)+'원</span>'+(firstWeekCrosses ? ' <span class="st-hp-badge in">지난달分 포함</span>' : '');
+      if(firstWeekCrosses) carryIn = true;
+    }else if(r.hasAbsent){
+      status = '<span class="st-hp-badge no" style="color:#dc2626;background:#fef2f2;border-color:#fecaca">무단결근 (미발생)</span>';
+    }else if(r.under15){
+      status = '<span class="st-hp-badge no">주 15h 미만</span>';
+    }else{
+      status = '<span class="st-hp-badge no">개근 미달 ('+r.wd+'/'+(emp.minDays||5)+'일)</span>';
+    }
+    rows += '<div class="st-dayrow"><span class="st-dayrow-date">'+range+'</span>'+
+      '<span class="st-dayrow-detail">'+r.wd+'일 · '+(hR%1===0?hR:hR.toFixed(1))+'h</span>'+
+      '<span class="st-dayrow-h" style="color:inherit">'+status+'</span></div>';
+  });
+  return { rows: rows, carryOut: carryOut, carryIn: carryIn };
+}
+
+function renderStmtEmp(body, emp){
+  const yr = state.yr, mo = state.mo;
+  const r = calcEmpMonth(emp, yr, mo);
+  const wage = parseInt(emp.wage) || 0;
+
+  if(r.wd === 0 || r.totH === 0){
+    body.innerHTML = '<div class="emp-empty">'+esc(emp.name)+'님의 '+(mo+1)+'월 출근 기록이 없습니다.<br><strong>출근부</strong> 탭에서 날짜를 눌러 근무를 입력해주세요.</div>';
+    return;
+  }
+
+  const otRate = Math.round(wage * 0.5);
+  let html = '<div class="ws-namebanner">'+
+    '<span class="ws-name">'+esc(emp.name)+'</span><span class="ws-namesuffix">님 '+yr+'년 '+(mo+1)+'월 급여명세서</span>'+
+  '</div>';
+
+  html += '<div class="ws-info">'+
+    '<div class="ws-info-title">📅 근무 정보</div>'+
+    '<div class="ws-info-grid">'+
+      '<div class="ws-info-row"><span class="ws-info-label">근무 기간</span><span class="ws-info-value">'+yr+'년 '+(mo+1)+'월</span></div>'+
+      '<div class="ws-info-row"><span class="ws-info-label">근무 일수</span><span class="ws-info-value">'+r.wd+'일'+'</span></div>'+
+      '<div class="ws-info-row"><span class="ws-info-label">총 근무시간</span><span class="ws-info-value">'+Hfmt(r.totH)+'</span></div>'+
+      '<div class="ws-info-row"><span class="ws-info-label">시급</span><span class="ws-info-value">'+W(wage)+'원</span></div>'+
+      '<div class="ws-info-row"><span class="ws-info-label">사업장 규모</span><span class="ws-info-value">'+(state.fiveOrMore?'5인 이상':'5인 미만')+'</span></div>'+
+      '<div class="ws-info-row"><span class="ws-info-label">주휴수당</span><span class="ws-info-value">'+(r.hp>0?'✓ '+W(r.hp)+'원':'미발생')+'</span></div>'+
+      '<div class="ws-info-row"><span class="ws-info-label">신고 유형</span><span class="ws-info-value">'+(emp.taxType==='freelance'?'<span class="st-tax-badge fl">3.3% · '+(emp.grossNet==='net'?'세후':'세전')+'</span>':'<span class="st-tax-badge in4">4대보험 · '+(emp.grossNet==='net'?'세후':'세전')+'</span>')+'</span></div>'+
+    '</div>'+
+  '</div>';
+
+  const gn = emp.grossNet === 'net' ? '세후' : '세전';
+  html += '<div class="ws-totals" style="grid-template-columns:1fr">'+
+    '<div class="ws-total-block monthly">'+
+      '<div class="ws-total-label">💰 '+(mo+1)+'월 총 급여 ('+gn+')</div>'+
+      '<div class="ws-total-val" style="font-size:26px">'+W(r.total)+'원</div>'+
+    '</div>'+
+  '</div>';
+
+  // 신고 유형 안내 (공제 계산은 세무 신고 시 정산 — 표시하지 않음)
+  if(emp.taxType === 'freelance'){
+    html += '<div class="st-tax-box fl">'+
+      '<div class="st-tax-box-h">📋 3.3% 사업소득 신고 대상 <span class="st-tax-gross">위 금액은 '+gn+'</span></div>'+
+      '<div class="st-tax-box-note">원천징수(3.3%)와 실지급액은 세무 신고 시 정산됩니다. 다음 달 10일까지 원천세 신고·납부 대상이며, 실질이 근로자(출퇴근 시간·장소 지휘감독)라면 3.3% 처리 시 노무 리스크가 있을 수 있습니다.</div>'+
+    '</div>';
+  }else{
+    html += '<div class="st-tax-box in4">'+
+      '<div class="st-tax-box-h">🏥 4대보험 신고 대상 (근로소득) <span class="st-tax-gross">위 금액은 '+gn+'</span></div>'+
+      '<div class="st-tax-box-note">4대보험 본인부담분과 근로소득세 공제 후 금액이 실지급되며, 공제액은 세무 신고 시 정산됩니다. 월 60시간 이상 근무 시 국민연금·건강보험 가입 의무가 발생합니다'+(r.totH>=60?' — 이번 달 '+Hfmt(r.totH)+' 근무로 <strong>가입 대상</strong>입니다':'')+'. 고용·산재보험은 근무시간과 무관하게 적용됩니다.</div>'+
+    '</div>';
+  }
+
+  html += '<div class="ws-breakdown-wrap"><div class="pi-breakdown" style="margin-bottom:0">'+
+    '<div class="pi-breakdown-h">💵 급여 산출 내역</div>'+
+    '<table>'+
+      '<thead><tr><th>항목</th><th>시간</th><th>단가</th><th>금액</th></tr></thead>'+
+      '<tbody>'+
+        '<tr><td>기본급</td><td class="muted">'+Hfmt(r.totH)+'</td><td class="muted">'+W(wage)+'원</td><td class="amt">'+W(r.base)+'원</td></tr>'+
+        (r.paidPay>0?'<tr class="green"><td>유급휴가</td><td class="muted">'+Hfmt(r.paidH)+'</td><td class="muted">'+W(wage)+'원</td><td class="amt green">'+W(r.paidPay)+'원</td></tr>':'')+
+        (r.hp>0?'<tr class="green"><td>주휴수당</td><td class="muted">'+Hfmt(r.hpH)+'</td><td class="muted">'+W(wage)+'원</td><td class="amt green">'+W(r.hp)+'원</td></tr>':'')+
+        (r.otEx>0?'<tr class="amber"><td>연장수당</td><td class="muted">'+Hfmt(r.dotH)+' × 0.5</td><td class="muted">'+W(otRate)+'원</td><td class="amt amber">'+W(r.otEx)+'원</td></tr>':'')+
+        (r.nEx>0?'<tr class="purple"><td>야간수당</td><td class="muted">'+Hfmt(r.ngtH)+' × 0.5</td><td class="muted">'+W(otRate)+'원</td><td class="amt purple">'+W(r.nEx)+'원</td></tr>':'')+
+        (r.holEx>0?'<tr class="amber"><td>공휴일 수당</td><td class="muted">'+Hfmt(r.holH)+'</td><td class="muted">가산</td><td class="amt amber">'+W(r.holEx)+'원</td></tr>':'')+
+        (r.laborDayPay>0?'<tr><td>노동절 수당</td><td class="muted">-</td><td class="muted">100%</td><td class="amt">'+W(r.laborDayPay)+'원</td></tr>':'')+
+        '<tr class="total"><td>합계</td><td></td><td></td><td>'+W(r.total)+'원</td></tr>'+
+      '</tbody>'+
+    '</table>'+
+  '</div></div>';
+
+  // 주차별 주휴 내역 (이월 기록)
+  const wkHp = buildWeeklyHpRows(emp, yr, mo);
+  if(wkHp.rows){
+    html += '<div class="st-daylist"><div class="st-daylist-h">✅ 주차별 주휴수당</div>'+wkHp.rows+'</div>';
+    if(wkHp.carryOut){
+      html += '<div class="st-stmt-note carry">↪️ 마지막 주가 다음 달에 걸쳐 있어, 해당 주의 주휴수당은 <strong>다음 달 급여에서 지급</strong>됩니다 (주 단위 개근 확정 후 정산).</div>';
+    }
+    if(wkHp.carryIn){
+      html += '<div class="st-stmt-note carry">↩️ 첫째 주 주휴수당에는 <strong>지난달 근무분이 포함</strong>되어 있습니다 (지난달에서 이월).</div>';
+    }
+  }
+
+  // 일별 근무 내역
+  const prefix = yr + '-' + p2(mo+1) + '-';
+  const dayKeys = Object.keys(state.records).filter(function(ds){
+    return ds.indexOf(prefix) === 0 && state.records[ds][emp.id];
+  }).sort();
+  if(dayKeys.length > 0){
+    let dayRows = '';
+    dayKeys.forEach(function(ds){
+      const rec = state.records[ds][emp.id];
+      const parts = ds.split('-').map(Number);
+      const dowName = ['일','월','화','수','목','금','토'][new Date(parts[0],parts[1]-1,parts[2]).getDay()];
+      let detail, hTxt;
+      if(rec.mode === 'absent'){
+        detail = '<span style="color:#dc2626;font-weight:800">무단결근</span>'; hTxt = '-';
+      }else if(rec.mode === 'paid'){
+        const ph = Math.max(0, parseFloat(rec.hours)||0);
+        detail = '<span style="color:#059669;font-weight:800">유급휴가</span>'; hTxt = Hfmt(ph);
+      }else{
+        const hh = recH(rec);
+        if(hh <= 0) return;
+        detail = rec.mode === 'hours'
+          ? '시간 입력'+(rec.brk?' (휴게 '+rec.brk+'분 차감)':'')
+          : rec.start+'~'+rec.end+(rec.brk?' (휴게 '+rec.brk+'분)':'');
+        hTxt = Hfmt(hh);
+      }
+      dayRows += '<div class="st-dayrow"><span class="st-dayrow-date">'+parts[1]+'/'+parts[2]+' ('+dowName+')</span>'+
+        '<span class="st-dayrow-detail">'+detail+'</span>'+
+        '<span class="st-dayrow-h">'+hTxt+'</span></div>';
+    });
+    html += '<div class="st-daylist"><div class="st-daylist-h">🗓️ 일별 근무 내역</div>'+dayRows+'</div>';
+  }
+
+  if(state.fiveOrMore && empHasHoursMode(emp, yr, mo)){
+    html += '<div class="st-stmt-note warn">⚠️ "시간만" 입력된 날은 야간수당(22시~06시)이 반영되지 않았습니다. 야간 근무가 있다면 출퇴근 시각으로 입력해주세요.</div>';
+  }
+  html += '<div class="st-stmt-note">4대보험·소득세 공제 전 금액입니다 · 주휴 개근 기준: 주 '+(emp.minDays||5)+'일</div>';
+
+  body.innerHTML = html;
+}
+
+function shareStmt(){
+  const isAll = state.stmtEmpId === '__all__' || !getEmp(state.stmtEmpId);
+  const fname = isAll
+    ? (state.mo+1)+'월_인건비_요약'
+    : getEmp(state.stmtEmpId).name+'_'+(state.mo+1)+'월_급여명세서';
+  copyResultAsImage('stmt-body', fname);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 이벤트 바인딩 / 초기화
+// ══════════════════════════════════════════════════════════════
+function bindEvents(){
+  const newWageEl = document.getElementById('emp-new-wage');
+  if(newWageEl){
+    newWageEl.addEventListener('input', function(e){
+      handleAmountInput(e.target, function(){});
+      document.querySelectorAll('#pane-staff .wage-preset[data-wage]').forEach(function(b){ b.classList.remove('on'); });
+    });
+  }
+  const newNameEl = document.getElementById('emp-new-name');
+  if(newNameEl){
+    newNameEl.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){ document.getElementById('emp-new-wage').focus(); }
+    });
+  }
+}
+
+function initApp(){
+  load();
+  bindEvents();
+  switchTab(state.activeTab || 'cal');
+  renderStaff();
+  renderCal();
+  renderStmt();
+}
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', initApp);
+}else{
+  initApp();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// html2canvas 동적 로드 + 클립보드 복사 (재사용 가능 함수로 일반화)
+// ══════════════════════════════════════════════════════════════
+let _html2canvasPromise = null;
+function loadHtml2Canvas(){
+  if(window.html2canvas) return Promise.resolve(window.html2canvas);
+  if(_html2canvasPromise) return _html2canvasPromise;
+  _html2canvasPromise = new Promise(function(resolve, reject){
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    script.crossOrigin = 'anonymous';
+    script.onload = function(){ resolve(window.html2canvas); };
+    script.onerror = function(){ reject(new Error('CDN 로드 실패 (인터넷 연결 확인)')); };
+    document.head.appendChild(script);
+  });
+  return _html2canvasPromise;
+}
+
+async function copyResultAsImage(elementId, filename){
+  const targetEl = document.getElementById(elementId);
+  if(!targetEl){ toast('❌ 캡쳐할 영역을 찾지 못했습니다'); return; }
+
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  toast('📸 이미지 생성 중...');
+
+  // 캡처 함수 (재사용)
+  async function getBlob(){
+    const html2canvas = await loadHtml2Canvas();
+    const rect = targetEl.getBoundingClientRect();
+    // ★ 캡처 폭: 모바일 좁은 화면에서 잘림 방지를 위해 최소 480px 보장
+    const captureWidth = Math.max(480, Math.ceil(Math.max(rect.width, targetEl.offsetWidth)));
+    const captureHeight = Math.ceil(Math.max(rect.height, targetEl.offsetHeight, targetEl.scrollHeight)) + 30;
+    const canvas = await html2canvas(targetEl, {
+      backgroundColor: '#ffffff', scale: 2, useCORS: true, allowTaint: false,
+      logging: false, imageTimeout: 5000,
+      width: captureWidth, height: captureHeight,
+      windowWidth: captureWidth, windowHeight: captureHeight, x:0, y:0,
+      onclone: function(clonedDoc){
+        const clonedEl = clonedDoc.getElementById(elementId);
+        if(clonedEl){
+          clonedEl.style.position = 'static';
+          clonedEl.style.margin = '0';
+          clonedEl.style.padding = '14px 16px';
+          clonedEl.style.maxWidth = 'none';
+          clonedEl.style.width = captureWidth + 'px';
+          clonedEl.style.background = '#ffffff';
+          clonedEl.style.overflow = 'visible';
+          // ★ 그라데이션 텍스트(.ws-name)를 단색으로 변환
+          //   html2canvas가 -webkit-background-clip:text를 완벽 지원 안 함 → 음영/누락 발생
+          const nameEls = clonedEl.querySelectorAll('.ws-name');
+          nameEls.forEach(function(el){
+            el.style.background = 'none';
+            el.style.backgroundImage = 'none';
+            el.style.webkitBackgroundClip = 'border-box';
+            el.style.backgroundClip = 'border-box';
+            el.style.webkitTextFillColor = '#059669';
+            el.style.color = '#059669';
+          });
+          // ★ 이름 배너 배경 그라데이션도 단색으로 (일관성)
+          const banners = clonedEl.querySelectorAll('.ws-namebanner');
+          banners.forEach(function(el){
+            el.style.background = '#f0fdf4';
+            el.style.backgroundImage = 'none';
+          });
+        }
+      }
+    });
+    const b = await new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png', 0.95); });
+    if(!b) throw new Error('이미지 생성 실패');
+    return b;
+  }
+
+  // 다운로드 폴백
+  function downloadBlob(blob){
+    const downloadUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = filename + '_' + new Date().toISOString().slice(0,10) + '.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(downloadUrl); }, 1000);
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 모바일: ClipboardItem(Promise) → Web Share → 다운로드
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  if(isMobile){
+    // ★ 1차: ClipboardItem이 Promise를 받는 형태로 호출 (iOS Safari user gesture 보존)
+    //   비동기 작업(html2canvas) 시작 전에 즉시 clipboard.write를 호출해야
+    //   Safari가 user gesture 컨텍스트를 유지하고 권한을 부여함
+    if(navigator.clipboard && typeof ClipboardItem !== 'undefined' && window.isSecureContext){
+      try{
+        const blobPromise = getBlob();
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blobPromise })
+        ]);
+        toast('✅ 클립보드에 복사되었습니다!\n카카오톡에 붙여넣기 하세요');
+        return;
+      }catch(err){
+        console.warn('Clipboard(Promise) 실패:', err);
+        // 인앱 브라우저(카카오톡 내, 인스타 내 등)에서 차단된 경우 폴백으로 진행
+      }
+    }
+
+    // ★ 2차: Web Share API - 카톡으로 직접 공유 다이얼로그 호출
+    //   iOS/Android 모두 잘 동작. 사용자가 카톡 선택하면 바로 전달됨
+    let blob = null;
+    try{
+      blob = await getBlob();
+    }catch(e){
+      toast('❌ 이미지 생성 실패: ' + e.message);
+      return;
+    }
+
+    if(navigator.share && typeof navigator.canShare === 'function'){
+      try{
+        const file = new File([blob], filename + '.png', { type: 'image/png' });
+        if(navigator.canShare({ files: [file] })){
+          await navigator.share({ files: [file], title: filename });
+          toast('✅ 공유되었습니다!');
+          return;
+        }
+      }catch(err){
+        if(err && err.name === 'AbortError') return; // 사용자가 공유 취소
+        console.warn('Web Share 실패:', err);
+      }
+    }
+
+    // ★ 3차: 다운로드
+    downloadBlob(blob);
+    toast('📥 이미지가 다운로드되었습니다\n(클립보드/공유 차단 환경)');
+    return;
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // PC: 캡처 → Clipboard → 다운로드
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  let blob = null;
+  try{
+    blob = await getBlob();
+  }catch(e){
+    toast('❌ 이미지 생성 실패: ' + e.message);
+    return;
+  }
+
+  if(navigator.clipboard && typeof ClipboardItem !== 'undefined' && window.isSecureContext){
+    try{
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      toast('✅ 클립보드에 복사되었습니다!\n카카오톡에 붙여넣기 하세요');
+      return;
+    }catch(err){
+      console.warn('Clipboard 실패:', err);
+    }
+  }
+
+  downloadBlob(blob);
+  toast('📥 이미지가 다운로드되었습니다');
+}
+
+// ══════════════════════════════════════════════════════════════
+// 토스트
+// ══════════════════════════════════════════════════════════════
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.innerHTML = msg.replace(/\n/g, '<br>');
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2200);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ★ 콤마 포맷 입력 핸들러 (재사용)
+// ══════════════════════════════════════════════════════════════
+function handleAmountInput(el, onChange){
+  const cursorBefore = el.selectionStart || 0;
+  const valueBefore = el.value;
+  const raw = valueBefore.replace(/[^0-9]/g, '');
+  const numVal = raw === '' ? 0 : parseInt(raw, 10);
+  const formatted = numVal > 0 ? numVal.toLocaleString('ko-KR') : '';
+  if(el.value !== formatted){
+    el.value = formatted;
+    try{
+      const lenDiff = formatted.length - valueBefore.length;
+      const newPos = Math.max(0, Math.min(formatted.length, cursorBefore + lenDiff));
+      el.setSelectionRange(newPos, newPos);
+    }catch(err){}
+  }
+  onChange(numVal);
+}
+
+
+// PWA 서비스워커 등록 (웹 호스팅 시에만 동작)
+if('serviceWorker' in navigator && location.protocol === 'https:'){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+</script>
+</body>
+</html>

@@ -867,20 +867,6 @@ input:focus,select:focus,button:focus{outline:none;}
 .emp-retired-info{font-size:10.5px;color:#94a3b8;font-weight:600;margin-bottom:9px;line-height:1.5;}
 .emp-retired-btns{display:flex;gap:7px;}
 .emp-back-btn{flex:1;padding:9px;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:8px;color:#fff;font-size:11.5px;font-weight:800;cursor:pointer;}
-.lic-card{background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1.5px solid #fcd34d;border-radius:13px;padding:13px 14px;margin-bottom:12px;}
-.lic-card.ok{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-color:#86efac;}
-.lic-card-t{font-size:13px;font-weight:800;color:#92400e;margin-bottom:6px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
-.lic-card.ok .lic-card-t{color:#166534;}
-.lic-badge{display:inline-block;padding:2px 8px;border-radius:6px;background:#fef2f2;color:#b91c1c;font-size:9.5px;font-weight:800;border:1px solid #fecaca;}
-.lic-badge.ok{background:#dcfce7;color:#059669;border-color:#86efac;}
-.lic-card-b{font-size:11.5px;color:#78350f;font-weight:600;line-height:1.6;margin-bottom:10px;}
-.lic-card.ok .lic-card-b{color:#166534;margin-bottom:8px;}
-.lic-input-row{display:flex;gap:7px;margin-bottom:9px;}
-.lic-input{flex:1;padding:11px 12px;border:1.5px solid #fcd34d;border-radius:9px;font-size:13px;font-weight:800;color:#0f172a;background:#fff;letter-spacing:.5px;font-variant-numeric:tabular-nums;min-width:0;}
-.lic-input:focus{border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.15);}
-.lic-btn{flex-shrink:0;padding:11px 18px;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 3px 8px rgba(245,158,11,.3);}
-.lic-contact{display:block;text-align:center;font-size:11px;font-weight:700;color:#b45309;text-decoration:none;}
-.lic-release{padding:8px 14px;background:#fff;border:1.5px solid #cbd5e1;border-radius:8px;color:#64748b;font-size:11px;font-weight:700;cursor:pointer;}
 .st-share-hint{margin-top:7px;font-size:10px;color:#94a3b8;font-weight:600;text-align:center;line-height:1.5;}
 
 </style>
@@ -1294,12 +1280,6 @@ function setNewEmpWage(v){
 }
 
 function addEmployee(){
-  if(!licActive() && state.employees.length >= LIC_FREE_MAX){
-    toast('🔒 미인증 상태에서는 직원 '+LIC_FREE_MAX+'명까지 등록할 수 있습니다\n직원 탭 상단에서 라이선스 키를 인증해주세요');
-    const inp = document.getElementById('lic-key-input');
-    if(inp){ inp.focus(); }
-    return;
-  }
   const nameEl = document.getElementById('emp-new-name');
   const wageEl = document.getElementById('emp-new-wage');
   const name = (nameEl.value || '').trim();
@@ -1404,8 +1384,7 @@ function renderStaff(){
   const retirees = state.employees.filter(function(e){ return e.retired; });
   const view = state.staffView === 'retired' ? 'retired' : 'active';
 
-  let html = buildLicCard();
-  html += '<div class="dp-mode-toggle" style="margin-bottom:11px">'+
+  let html = '<div class="dp-mode-toggle" style="margin-bottom:11px">'+
     '<button class="'+(view==='active'?'on':'')+'" onclick="setStaffView(\'active\')">👥 재직 중 ('+actives.length+')</button>'+
     '<button class="'+(view==='retired'?'on':'')+'" onclick="setStaffView(\'retired\')">🚪 퇴사자 ('+retirees.length+')</button>'+
   '</div>';
@@ -1544,101 +1523,6 @@ function closeHomeShortcut(){
 }
 
 // ══════════════════════════════════════════════════════════════
-// 🔑 라이선스 (정식 인증)
-// ══════════════════════════════════════════════════════════════
-const LICENSE_API = 'https://YOUR-WORKER-URL.workers.dev';  // ★ 배포 후 본인 워커 주소로 교체
-const LIC_FREE_MAX = 1;        // 미인증 시 직원 수 제한
-const LIC_GRACE_DAYS = 14;     // 오프라인/서버 장애 시 인증 유지 기간
-
-function getLic(){
-  try{ return JSON.parse(localStorage.getItem('ptcLicense')) || null; }catch(e){ return null; }
-}
-function setLic(obj){
-  try{
-    if(obj) localStorage.setItem('ptcLicense', JSON.stringify(obj));
-    else localStorage.removeItem('ptcLicense');
-  }catch(e){}
-}
-function licActive(){
-  const lic = getLic();
-  if(!lic || !lic.valid || !lic.key) return false;
-  const age = (Date.now() - (lic.verifiedAt || 0)) / 86400000;
-  return age <= LIC_GRACE_DAYS;
-}
-function licConfigured(){
-  return LICENSE_API.indexOf('YOUR-WORKER') === -1;
-}
-async function verifyLicense(key, silent){
-  key = (key || '').trim().toUpperCase();
-  if(!key){ if(!silent) toast('라이선스 키를 입력해주세요'); return false; }
-  if(!licConfigured()){
-    if(!silent) toast('⚠️ 라이선스 서버가 아직 설정되지 않았습니다');
-    return false;
-  }
-  try{
-    const res = await fetch(LICENSE_API + '/verify?key=' + encodeURIComponent(key), { cache:'no-store' });
-    const data = await res.json();
-    if(data.valid){
-      setLic({ key: key, valid: true, verifiedAt: Date.now() });
-      if(!silent) toast('✅ 정식 버전 인증 완료 — 모든 제한이 해제되었습니다');
-      renderStaff();
-      return true;
-    }else{
-      setLic(null);
-      if(!silent) toast('❌ 유효하지 않은 라이선스 키입니다\n문사무장 컨설팅에 문의해주세요');
-      renderStaff();
-      return false;
-    }
-  }catch(err){
-    // 서버 접속 불가: 기존 인증이 유예 기간 내면 유지
-    if(licActive()){
-      if(!silent) toast('오프라인 상태 — 기존 인증이 유지됩니다');
-      return true;
-    }
-    if(!silent) toast('⚠️ 인증 서버에 연결할 수 없습니다. 인터넷 연결을 확인해주세요');
-    return false;
-  }
-}
-function submitLicense(){
-  const el = document.getElementById('lic-key-input');
-  verifyLicense(el ? el.value : '');
-}
-function releaseLicense(){
-  if(!confirm('이 기기의 정식 인증을 해제하시겠습니까?\n데이터는 유지되지만 직원 추가가 '+LIC_FREE_MAX+'명으로 제한됩니다.')) return;
-  setLic(null);
-  renderStaff();
-  toast('인증이 해제되었습니다');
-}
-// 앱 시작 시 백그라운드 재검증 (무효화된 키 감지)
-setTimeout(function(){
-  const lic = getLic();
-  if(lic && lic.key && licConfigured() && navigator.onLine){
-    verifyLicense(lic.key, true);
-  }
-}, 1500);
-
-function buildLicCard(){
-  const lic = getLic();
-  if(licActive()){
-    const masked = lic.key.length > 4 ? '····-' + lic.key.slice(-4) : lic.key;
-    return '<div class="lic-card ok">'+
-      '<div class="lic-card-t">🔑 정식 버전 인증됨 <span class="lic-badge ok">라이선스 '+masked+'</span></div>'+
-      '<div class="lic-card-b">직원 수 제한 없이 모든 기능을 사용할 수 있습니다.</div>'+
-      '<button class="lic-release" onclick="releaseLicense()">인증 해제</button>'+
-    '</div>';
-  }
-  return '<div class="lic-card">'+
-    '<div class="lic-card-t">🔑 라이선스 인증 <span class="lic-badge">미인증 — 직원 '+LIC_FREE_MAX+'명 제한</span></div>'+
-    '<div class="lic-card-b">문사무장 컨설팅 계약 시 발급되는 라이선스 키를 입력하면 <strong>직원 수 제한이 해제</strong>됩니다.</div>'+
-    '<div class="lic-input-row">'+
-      '<input class="lic-input" id="lic-key-input" placeholder="MSJ-XXXX-XXXX-XXXX" autocapitalize="characters" autocomplete="off">'+
-      '<button class="lic-btn" onclick="submitLicense()">인증</button>'+
-    '</div>'+
-    '<a class="lic-contact" href="https://blog.naver.com/biznconsulting" target="_blank">📩 라이선스 문의 — 문사무장 컨설팅</a>'+
-  '</div>';
-}
-
-// ══════════════════════════════════════════════════════════════
 // 💾 데이터 백업 / 복원
 // ══════════════════════════════════════════════════════════════
 function exportBackup(){
@@ -1687,11 +1571,6 @@ function importBackup(inputEl){
       const p = JSON.parse(reader.result);
       if(!p || p.app !== 'partTimePayCalc' || !Array.isArray(p.employees) || typeof p.records !== 'object'){
         toast('⚠️ 이 앱의 백업 파일이 아닙니다');
-        inputEl.value = '';
-        return;
-      }
-      if(!licActive() && p.employees.length > LIC_FREE_MAX){
-        toast('🔒 미인증 상태에서는 직원 '+LIC_FREE_MAX+'명까지의 백업만 불러올 수 있습니다\n라이선스 인증 후 다시 시도해주세요');
         inputEl.value = '';
         return;
       }
@@ -2603,28 +2482,9 @@ async function copyResultAsImage(elementId, filename){
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 모바일: ClipboardItem(Promise) → Web Share → 다운로드
+  // 모바일: Web Share(공유창→카톡 바로 전송) → 클립보드 → 다운로드
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   if(isMobile){
-    // ★ 1차: ClipboardItem이 Promise를 받는 형태로 호출 (iOS Safari user gesture 보존)
-    //   비동기 작업(html2canvas) 시작 전에 즉시 clipboard.write를 호출해야
-    //   Safari가 user gesture 컨텍스트를 유지하고 권한을 부여함
-    if(navigator.clipboard && typeof ClipboardItem !== 'undefined' && window.isSecureContext){
-      try{
-        const blobPromise = getBlob();
-        await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': blobPromise })
-        ]);
-        toast('✅ 클립보드에 복사되었습니다!\n카카오톡에 붙여넣기 하세요');
-        return;
-      }catch(err){
-        console.warn('Clipboard(Promise) 실패:', err);
-        // 인앱 브라우저(카카오톡 내, 인스타 내 등)에서 차단된 경우 폴백으로 진행
-      }
-    }
-
-    // ★ 2차: Web Share API - 카톡으로 직접 공유 다이얼로그 호출
-    //   iOS/Android 모두 잘 동작. 사용자가 카톡 선택하면 바로 전달됨
     let blob = null;
     try{
       blob = await getBlob();
@@ -2633,6 +2493,7 @@ async function copyResultAsImage(elementId, filename){
       return;
     }
 
+    // ★ 1차: Web Share API — 공유창이 바로 떠서 카톡 선택 → 전송 (붙여넣기 과정 생략)
     if(navigator.share && typeof navigator.canShare === 'function'){
       try{
         const file = new File([blob], filename + '.png', { type: 'image/png' });
@@ -2642,14 +2503,27 @@ async function copyResultAsImage(elementId, filename){
           return;
         }
       }catch(err){
-        if(err && err.name === 'AbortError') return; // 사용자가 공유 취소
+        if(err && err.name === 'AbortError') return; // 사용자가 공유 취소 → 조용히 종료
         console.warn('Web Share 실패:', err);
+      }
+    }
+
+    // ★ 2차: 클립보드 복사 (공유 미지원 환경)
+    if(navigator.clipboard && typeof ClipboardItem !== 'undefined' && window.isSecureContext){
+      try{
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+        toast('✅ 클립보드에 복사되었습니다!\n카카오톡에 붙여넣기 하세요');
+        return;
+      }catch(err){
+        console.warn('Clipboard 실패:', err);
       }
     }
 
     // ★ 3차: 다운로드
     downloadBlob(blob);
-    toast('📥 이미지가 다운로드되었습니다\n(클립보드/공유 차단 환경)');
+    toast('📥 이미지가 다운로드되었습니다\n(공유/클립보드 차단 환경)');
     return;
   }
 

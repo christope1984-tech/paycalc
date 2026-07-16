@@ -905,6 +905,7 @@ input:focus,select:focus,button:focus{outline:none;}
   <div class="tabs">
     <button class="tab on" id="tab-cal" onclick="switchTab('cal')"><span class="tab-icon">🗓️</span>출근부</button>
     <button class="tab" id="tab-stmt" onclick="switchTab('stmt')"><span class="tab-icon">📄</span>명세서</button>
+    <button class="tab" id="tab-stats" onclick="switchTab('stats')"><span class="tab-icon">📊</span>통계</button>
     <button class="tab" id="tab-staff" onclick="switchTab('staff')"><span class="tab-icon">👥</span>직원</button>
   </div>
 </div>
@@ -1047,6 +1048,22 @@ input:focus,select:focus,button:focus{outline:none;}
 
 </div>
 
+
+
+<!-- ━━ 탭: 통계 ━━ -->
+<div class="tab-pane" id="pane-stats">
+
+  <div class="card">
+    <div class="card-b" id="stats-body" style="background:#fff"></div>
+  </div>
+
+  <div id="stats-share-wrap" style="display:none">
+    <button class="copy-btn st-share-btn" onclick="copyResultAsImage('stats-body', '인건비_통계')">
+      📸 이미지로 저장/복사 → 카카오톡 공유
+    </button>
+  </div>
+
+</div>
 
 <div class="footer">Powered by <span>문사무장 급여 시스템</span></div>
 
@@ -1211,7 +1228,7 @@ function empColor(id){
 function switchTab(tab){
   state.activeTab = tab;
   save();
-  ['staff','cal','stmt'].forEach(function(t){
+  ['staff','cal','stmt','stats'].forEach(function(t){
     const tabBtn = document.getElementById('tab-'+t);
     const pane = document.getElementById('pane-'+t);
     if(tabBtn) tabBtn.classList.toggle('on', t===tab);
@@ -1220,6 +1237,7 @@ function switchTab(tab){
   if(tab === 'staff') renderStaff();
   if(tab === 'cal') renderCal();
   if(tab === 'stmt') renderStmt();
+  if(tab === 'stats') renderStats();
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
@@ -1245,7 +1263,7 @@ function resetCurrentTab(){
     renderCal();
     toast((state.mo+1)+'월 기록이 초기화되었습니다');
   }else{
-    toast('명세서 탭은 초기화할 항목이 없습니다');
+    toast('이 탭은 초기화할 항목이 없습니다');
   }
 }
 
@@ -2110,6 +2128,97 @@ function empHasHoursMode(emp, yr, mo){
 // ══════════════════════════════════════════════════════════════
 // 📄 명세서
 // ══════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════
+// 📊 통계 (월별/직원별 인건비 합계)
+// ══════════════════════════════════════════════════════════════
+function statsMonths(){
+  const set = {};
+  Object.keys(state.records).forEach(function(ds){
+    if(Object.keys(state.records[ds]).length > 0) set[ds.slice(0,7)] = true;
+  });
+  return Object.keys(set).sort();  // 'YYYY-MM' 오름차순
+}
+
+function renderStats(){
+  const body = document.getElementById('stats-body');
+  const shareWrap = document.getElementById('stats-share-wrap');
+  const months = statsMonths();
+
+  if(months.length === 0 || state.employees.length === 0){
+    body.innerHTML = '<div class="emp-empty">아직 통계를 낼 기록이 없습니다.<br><strong>출근부</strong>에서 근무를 입력하면 월별·직원별 합계가 여기에 표시됩니다.</div>';
+    shareWrap.style.display = 'none';
+    return;
+  }
+
+  // 월별 × 직원별 금액 계산 (한 번만 계산해서 두 표에 재사용)
+  const perMonth = {};   // 'YYYY-MM' -> { total, perEmp: {empId: total} }
+  months.forEach(function(mk){
+    const yr = parseInt(mk.slice(0,4)), mo = parseInt(mk.slice(5,7)) - 1;
+    const entry = { total: 0, perEmp: {} };
+    state.employees.forEach(function(e){
+      const r = calcEmpMonth(e, yr, mo);
+      if(r.wd === 0 && r.total === 0) return;
+      entry.perEmp[e.id] = r.total;
+      entry.total += r.total;
+    });
+    perMonth[mk] = entry;
+  });
+
+  const fmtMk = function(mk){ return parseInt(mk.slice(0,4)) + '년 ' + parseInt(mk.slice(5,7)) + '월'; };
+
+  let html = '<div class="ws-namebanner">'+
+    '<span class="ws-name">인건비 통계</span><span class="ws-namesuffix"> (세전 · 주휴 포함)</span>'+
+  '</div>';
+
+  // ── 1. 월별 합계 ──
+  let grand = 0;
+  let moRows = '';
+  months.forEach(function(mk){
+    const t = perMonth[mk].total;
+    if(t === 0) return;
+    grand += t;
+    const cnt = Object.keys(perMonth[mk].perEmp).length;
+    moRows += '<tr><td class="st-sum-name">'+fmtMk(mk)+'</td>'+
+      '<td class="muted nw">'+cnt+'명</td>'+
+      '<td class="amt nw" colspan="2">'+W(t)+'원</td></tr>';
+  });
+  html += '<div class="ws-breakdown-wrap"><div class="pi-breakdown" style="margin-bottom:0">'+
+    '<div class="pi-breakdown-h">📆 월별 인건비 합계</div>'+
+    '<table>'+
+      '<thead><tr><th>월</th><th>직원</th><th colspan="2">합계 금액</th></tr></thead>'+
+      '<tbody>'+moRows+
+        '<tr class="total"><td>전체 합계</td><td></td><td colspan="2">'+W(grand)+'원</td></tr>'+
+      '</tbody>'+
+    '</table>'+
+  '</div></div>';
+
+  // ── 2. 직원별 월별 금액 + 합계 ──
+  state.employees.forEach(function(e){
+    let empTotal = 0, rows = '';
+    months.forEach(function(mk){
+      const amt = perMonth[mk].perEmp[e.id];
+      if(!amt) return;
+      empTotal += amt;
+      rows += '<div class="st-dayrow"><span class="st-dayrow-date" style="width:auto;min-width:76px">'+fmtMk(mk)+'</span>'+
+        '<span class="st-dayrow-detail"></span>'+
+        '<span class="st-dayrow-h" style="color:#0f172a">'+W(amt)+'원</span></div>';
+    });
+    if(empTotal === 0) return;
+    html += '<div class="st-daylist" style="margin-top:12px">'+
+      '<div class="st-daylist-h"><span class="emp-dot sm" style="background:'+empColor(e.id)+'"></span> '+esc(e.name)+
+        (e.retired ? ' <span class="emp-retired-tag">퇴사</span>' : '')+
+        '<span style="float:right;color:#059669">합계 '+W(empTotal)+'원</span></div>'+
+      rows+
+    '</div>';
+  });
+
+  html += '<div class="st-stmt-note">'+(state.fiveOrMore?'5인 이상':'5인 미만')+' 사업장 기준 · 각 월 금액은 명세서와 동일 (주휴 이월 반영) · 모든 금액은 세전</div>';
+
+  body.innerHTML = html;
+  shareWrap.style.display = '';
+}
+
 function updChipsBar(){
   const el = document.getElementById('stmt-chips');
   const bar = document.getElementById('stmt-chipbar');

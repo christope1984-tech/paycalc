@@ -872,6 +872,16 @@ input:focus,select:focus,button:focus{outline:none;}
 .demo-card-t{font-size:13.5px;font-weight:800;color:#92400e;margin-bottom:7px;letter-spacing:-.2px;}
 .demo-card-b{font-size:12px;color:#78350f;font-weight:600;line-height:1.65;margin-bottom:11px;}
 .demo-card-link{display:block;text-align:center;padding:11px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:10px;color:#fff;font-size:13px;font-weight:800;text-decoration:none;box-shadow:0 3px 10px rgba(245,158,11,.3);}
+#stats-body{padding:14px 10px;}
+#stats-body .ws-breakdown-wrap{padding:2px 0 0;}
+#stats-body .ws-namebanner{border-radius:12px;border:1px solid #e2e8f0;border-bottom:2px solid #e2e8f0;margin-bottom:12px;}
+#stats-body .pi-breakdown table{table-layout:fixed;}
+#stats-body .pi-breakdown th:nth-child(1){width:38%;text-align:left;}
+#stats-body .pi-breakdown th:nth-child(2){width:18%;text-align:center;}
+#stats-body .pi-breakdown td:nth-child(2){text-align:center;}
+#stats-body .pi-breakdown td{padding:12px 5px;line-height:1;vertical-align:middle;}
+#stats-body .pi-breakdown th{padding:8px 5px;line-height:1;vertical-align:middle;}
+#stats-body td.nw{white-space:nowrap;}
 .st-share-hint{margin-top:7px;font-size:10px;color:#94a3b8;font-weight:600;text-align:center;line-height:1.5;}
 
 </style>
@@ -1054,11 +1064,24 @@ input:focus,select:focus,button:focus{outline:none;}
 <div class="tab-pane" id="pane-stats">
 
   <div class="card">
+    <div class="card-b" style="padding:10px 12px">
+      <div class="st-nav">
+        <button class="st-nav-btn" onclick="changeStatsYear(-1)">‹</button>
+        <div class="st-nav-center">
+          <div class="st-nav-text" id="stats-nav-text">2026년</div>
+          <div class="st-nav-sub" id="stats-nav-sub"></div>
+        </div>
+        <button class="st-nav-btn" onclick="changeStatsYear(1)">›</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-b" id="stats-body" style="background:#fff"></div>
   </div>
 
   <div id="stats-share-wrap" style="display:none">
-    <button class="copy-btn st-share-btn" onclick="copyResultAsImage('stats-body', '인건비_통계')">
+    <button class="copy-btn st-share-btn" onclick="copyResultAsImage('stats-body', (state.statsYr||new Date().getFullYear())+'년_인건비_통계')">
       📸 이미지로 저장/복사 → 카카오톡 공유
     </button>
   </div>
@@ -1187,7 +1210,8 @@ let state = {
   records: {},            // { 'YYYY-MM-DD': { empId: {mode:'time',start,end,brk} | {mode:'hours',hours} } }
   selectedDate: null,
   stmtEmpId: '__all__',
-  staffView: 'active'
+  staffView: 'active',
+  statsYr: null
 };
 
 function genId(){ return 'e' + Date.now().toString(36) + Math.random().toString(36).substr(2,4); }
@@ -2140,13 +2164,36 @@ function statsMonths(){
   return Object.keys(set).sort();  // 'YYYY-MM' 오름차순
 }
 
+function changeStatsYear(delta){
+  if(state.statsYr == null) state.statsYr = new Date().getFullYear();
+  state.statsYr += delta;
+  save();
+  renderStats();
+}
+
 function renderStats(){
   const body = document.getElementById('stats-body');
   const shareWrap = document.getElementById('stats-share-wrap');
-  const months = statsMonths();
+  const allMonths = statsMonths();
+
+  // 기본 연도: 기록이 있는 가장 최근 연도, 없으면 올해
+  if(state.statsYr == null){
+    state.statsYr = allMonths.length > 0
+      ? parseInt(allMonths[allMonths.length-1].slice(0,4))
+      : new Date().getFullYear();
+  }
+  const yr = state.statsYr;
+  document.getElementById('stats-nav-text').textContent = yr + '년';
+  const dataYears = {};
+  allMonths.forEach(function(mk){ dataYears[mk.slice(0,4)] = true; });
+  document.getElementById('stats-nav-sub').textContent =
+    Object.keys(dataYears).length > 0 ? '기록: ' + Object.keys(dataYears).sort().map(function(y){return y+'년';}).join(' · ') : '';
+
+  const months = allMonths.filter(function(mk){ return mk.slice(0,4) === String(yr); });
 
   if(months.length === 0 || state.employees.length === 0){
-    body.innerHTML = '<div class="emp-empty">아직 통계를 낼 기록이 없습니다.<br><strong>출근부</strong>에서 근무를 입력하면 월별·직원별 합계가 여기에 표시됩니다.</div>';
+    body.innerHTML = '<div class="emp-empty">'+yr+'년에는 통계를 낼 기록이 없습니다.<br>'+
+      (allMonths.length > 0 ? '위 화살표로 <strong>기록이 있는 연도</strong>로 이동해보세요.' : '<strong>출근부</strong>에서 근무를 입력하면 월별·직원별 합계가 여기에 표시됩니다.')+'</div>';
     shareWrap.style.display = 'none';
     return;
   }
@@ -2168,7 +2215,7 @@ function renderStats(){
   const fmtMk = function(mk){ return parseInt(mk.slice(0,4)) + '년 ' + parseInt(mk.slice(5,7)) + '월'; };
 
   let html = '<div class="ws-namebanner">'+
-    '<span class="ws-name">인건비 통계</span><span class="ws-namesuffix"> (세전 · 주휴 포함)</span>'+
+    '<span class="ws-name">'+yr+'년</span><span class="ws-namesuffix"> 인건비 통계 (세전 · 주휴 포함)</span>'+
   '</div>';
 
   // ── 1. 월별 합계 ──
@@ -2188,7 +2235,7 @@ function renderStats(){
     '<table>'+
       '<thead><tr><th>월</th><th>직원</th><th colspan="2">합계 금액</th></tr></thead>'+
       '<tbody>'+moRows+
-        '<tr class="total"><td>전체 합계</td><td></td><td colspan="2">'+W(grand)+'원</td></tr>'+
+        '<tr class="total"><td>'+yr+'년 합계</td><td></td><td colspan="2">'+W(grand)+'원</td></tr>'+
       '</tbody>'+
     '</table>'+
   '</div></div>';
@@ -2208,7 +2255,7 @@ function renderStats(){
     html += '<div class="st-daylist" style="margin-top:12px">'+
       '<div class="st-daylist-h"><span class="emp-dot sm" style="background:'+empColor(e.id)+'"></span> '+esc(e.name)+
         (e.retired ? ' <span class="emp-retired-tag">퇴사</span>' : '')+
-        '<span style="float:right;color:#059669">합계 '+W(empTotal)+'원</span></div>'+
+        '<span style="float:right;color:#059669">'+yr+'년 합계 '+W(empTotal)+'원</span></div>'+
       rows+
     '</div>';
   });

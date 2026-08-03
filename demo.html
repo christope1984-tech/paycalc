@@ -894,6 +894,18 @@ input:focus,select:focus,button:focus{outline:none;}
 #stats-body .pi-breakdown td{padding:12px 5px;line-height:1;vertical-align:middle;}
 #stats-body .pi-breakdown th{padding:8px 5px;line-height:1;vertical-align:middle;}
 #stats-body td.nw{white-space:nowrap;}
+.dr-box{margin-top:14px;border:1.5px solid #e2e8f0;border-radius:12px;padding:12px 13px;background:#fbfcfd;}
+.dr-h{font-size:12.5px;font-weight:800;color:#334155;margin-bottom:9px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.dr-tag{display:inline-block;padding:2px 7px;border-radius:5px;background:#eef2f7;color:#64748b;font-size:9.5px;font-weight:800;border:1px solid #e2e8f0;}
+.dr-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;font-size:11.5px;color:#475569;font-weight:600;border-bottom:1px solid #f1f5f9;font-variant-numeric:tabular-nums;}
+.dr-row span:last-child{white-space:nowrap;font-weight:700;}
+.dr-row.gross{color:#0f172a;font-weight:800;}
+.dr-row.muted-row{color:#94a3b8;}
+.dr-row.muted-row span:last-child{color:#94a3b8;font-weight:600;}
+.dr-row.sum{color:#b91c1c;font-weight:800;}
+.dr-row.net{color:#0f172a;font-weight:900;font-size:13px;border-bottom:none;padding-top:9px;}
+.dr-note{margin-top:8px;font-size:10px;color:#64748b;font-weight:600;line-height:1.6;}
+.dr-warn{margin-top:7px;font-size:10px;color:#92400e;background:#fffbeb;border:1px dashed #fcd34d;border-radius:8px;padding:7px 9px;font-weight:600;line-height:1.55;}
 .st-share-hint{margin-top:7px;font-size:10px;color:#94a3b8;font-weight:600;text-align:center;line-height:1.5;}
 
 </style>
@@ -2525,9 +2537,64 @@ function renderStmtEmp(body, emp){
   if(state.fiveOrMore && empHasHoursMode(emp, yr, mo)){
     html += '<div class="st-stmt-note warn">⚠️ "시간만" 입력된 날은 야간수당(22시~06시)이 반영되지 않았습니다. 야간 근무가 있다면 출퇴근 시각으로 입력해주세요.</div>';
   }
+  // ── 참고용 공제 시뮬레이션 (맨 하단 · 개인 명세서에만 표시) ──
+  html += buildDeductRef(emp, r);
   html += '<div class="st-stmt-note">4대보험·소득세 공제 전 금액입니다 · 주휴 개근 기준: 주 '+(emp.minDays||5)+'일</div>';
 
   body.innerHTML = html;
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 📎 참고용 공제 시뮬레이션 (2026년 기준 · 계산 결과에는 미반영)
+// ══════════════════════════════════════════════════════════════
+const INS_RATE = {
+  pension: 0.0475,   // 국민연금 9.5% ÷ 2 (2026년)
+  health: 0.03595,   // 건강보험 7.19% ÷ 2 (2026년)
+  care: 0.1314,      // 장기요양 = 건강보험료(본인분) × 13.14% (2026년)
+  employ: 0.009      // 고용보험 실업급여 근로자분 0.9%
+};
+
+function buildDeductRef(emp, r){
+  const gross = r.total;
+  if(!gross) return '';
+  const isFl = emp.taxType === 'freelance';
+  let rows = '', sum = 0, note = '';
+
+  if(isFl){
+    const inc = Math.floor(gross * 0.03 / 10) * 10;
+    const loc = Math.floor(gross * 0.003 / 10) * 10;
+    sum = inc + loc;
+    rows += '<div class="dr-row"><span>소득세 (3%)</span><span>-'+W(inc)+'원</span></div>'+
+            '<div class="dr-row"><span>지방소득세 (0.3%)</span><span>-'+W(loc)+'원</span></div>';
+    note = '사업소득 원천징수 3.3% 기준입니다. 실제 신고·납부는 다음 달 10일까지이며, 최종 세액은 종합소득세 신고 시 정산됩니다.';
+  }else{
+    const under60 = (r.totH + r.paidH) < 60;
+    const pen = under60 ? 0 : Math.floor(gross * INS_RATE.pension / 10) * 10;
+    const hea = under60 ? 0 : Math.floor(gross * INS_RATE.health / 10) * 10;
+    const care = under60 ? 0 : Math.floor(hea * INS_RATE.care / 10) * 10;
+    const emp2 = Math.floor(gross * INS_RATE.employ / 10) * 10;
+    sum = pen + hea + care + emp2;
+    if(under60){
+      rows += '<div class="dr-row muted-row"><span>국민연금 · 건강보험</span><span>월 60시간 미만 제외</span></div>';
+    }else{
+      rows += '<div class="dr-row"><span>국민연금 (4.75%)</span><span>-'+W(pen)+'원</span></div>'+
+              '<div class="dr-row"><span>건강보험 (3.595%)</span><span>-'+W(hea)+'원</span></div>'+
+              '<div class="dr-row"><span>장기요양 (건보료의 13.14%)</span><span>-'+W(care)+'원</span></div>';
+    }
+    rows += '<div class="dr-row"><span>고용보험 (0.9%)</span><span>-'+W(emp2)+'원</span></div>';
+    note = '2026년 요율 기준 <strong>4대보험 근로자 부담분</strong>만 계산한 값입니다. <strong>근로소득세·지방소득세는 부양가족 수에 따라 달라져 포함하지 않았습니다.</strong> 두루누리 지원, 보수월액 신고액 차이 등으로 실제 고지액과 다를 수 있습니다.';
+  }
+
+  return '<div class="dr-box">'+
+    '<div class="dr-h">📎 참고용 공제 계산 <span class="dr-tag">'+(isFl?'3.3% 사업소득':'4대보험')+'</span></div>'+
+    '<div class="dr-row gross"><span>세전 급여</span><span>'+W(gross)+'원</span></div>'+
+    rows+
+    '<div class="dr-row sum"><span>공제 합계</span><span>-'+W(sum)+'원</span></div>'+
+    '<div class="dr-row net"><span>차감 후 금액</span><span>'+W(gross-sum)+'원</span></div>'+
+    '<div class="dr-note">'+note+'</div>'+
+    '<div class="dr-warn">⚠️ 이 계산은 <strong>참고용 추정치</strong>이며 위 급여 금액에는 반영되지 않았습니다. 실제 공제액과 신고는 세무 대리인을 통해 확정하세요.</div>'+
+  '</div>';
 }
 
 function shareStmt(){

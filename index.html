@@ -901,6 +901,15 @@ input:focus,select:focus,button:focus{outline:none;}
 .dr-row.net{color:#0f172a;font-weight:900;font-size:13px;border-bottom:none;padding-top:9px;}
 .dr-note{margin-top:8px;font-size:10px;color:#64748b;font-weight:600;line-height:1.6;}
 .dr-warn{margin-top:7px;font-size:10px;color:#92400e;background:#fffbeb;border:1px dashed #fcd34d;border-radius:8px;padding:7px 9px;font-weight:600;line-height:1.55;}
+.st-drow{display:flex;align-items:center;gap:5px;padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:10.5px;}
+.st-drow.head{background:#f8fafc;font-weight:800;color:#94a3b8;font-size:9.5px;border-bottom:1.5px solid #e2e8f0;}
+.st-drow.absent{background:#fef2f2;}
+.st-drow-d{width:60px;flex-shrink:0;font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums;}
+.st-drow-t{flex:1;min-width:0;color:#475569;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.st-drow-b{width:38px;flex-shrink:0;text-align:center;color:#94a3b8;font-weight:600;}
+.st-drow-h{width:44px;flex-shrink:0;text-align:center;color:#059669;font-weight:800;font-variant-numeric:tabular-nums;}
+.st-drow-p{width:74px;flex-shrink:0;text-align:right;color:#0f172a;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.st-drow.head .st-drow-h,.st-drow.head .st-drow-p,.st-drow.head .st-drow-t{color:#94a3b8;}
 .st-share-hint{margin-top:7px;font-size:10px;color:#94a3b8;font-weight:600;text-align:center;line-height:1.5;}
 
 </style>
@@ -2502,29 +2511,45 @@ function renderStmtEmp(body, emp){
   }).sort();
   if(dayKeys.length > 0){
     let dayRows = '';
+    const wage = emp.wage || 0;
+    const hFmtNum = function(x){ const v = Math.round(x*100)/100; return (v%1===0? v : v.toFixed(v*10%1===0?1:2)); };
     dayKeys.forEach(function(ds){
       const rec = state.records[ds][emp.id];
       const parts = ds.split('-').map(Number);
       const dowName = ['일','월','화','수','목','금','토'][new Date(parts[0],parts[1]-1,parts[2]).getDay()];
-      let detail, hTxt;
+      let timeTxt, brkTxt, totTxt, payTxt, rowCls = '';
       if(rec.mode === 'absent'){
-        detail = '<span style="color:#dc2626;font-weight:800">무단결근</span>'; hTxt = '-';
+        timeTxt = '<span style="color:#dc2626;font-weight:800">무단결근</span>';
+        brkTxt = '-'; totTxt = '-'; payTxt = '0원'; rowCls = ' absent';
       }else if(rec.mode === 'paid'){
         const ph = Math.max(0, parseFloat(rec.hours)||0);
-        detail = '<span style="color:#059669;font-weight:800">유급휴가</span>'; hTxt = Hfmt(ph);
+        timeTxt = '<span style="color:#059669;font-weight:800">유급휴가</span>';
+        brkTxt = '-'; totTxt = hFmtNum(ph)+'h'; payTxt = W(Math.round(ph*wage))+'원';
       }else{
         const hh = recH(rec);
         if(hh <= 0) return;
-        detail = rec.mode === 'hours'
-          ? '시간 입력'+(rec.brk?' (휴게 '+rec.brk+'분 차감)':'')
-          : rec.start+'~'+rec.end+(rec.brk?' (휴게 '+rec.brk+'분)':'');
-        hTxt = Hfmt(hh);
+        if(rec.mode === 'hours'){
+          const raw = Math.max(0, parseFloat(rec.hours)||0);
+          timeTxt = hFmtNum(raw)+'h';
+        }else{
+          timeTxt = rec.start+'~'+rec.end;
+        }
+        brkTxt = rec.brk ? rec.brk+'분' : '-';
+        totTxt = hFmtNum(hh)+'h';
+        payTxt = W(Math.round(hh*wage))+'원';
       }
-      dayRows += '<div class="st-dayrow"><span class="st-dayrow-date">'+parts[1]+'/'+parts[2]+' ('+dowName+')</span>'+
-        '<span class="st-dayrow-detail">'+detail+'</span>'+
-        '<span class="st-dayrow-h">'+hTxt+'</span></div>';
+      dayRows += '<div class="st-drow'+rowCls+'">'+
+        '<span class="st-drow-d">'+parts[1]+'/'+parts[2]+' ('+dowName+')</span>'+
+        '<span class="st-drow-t">'+timeTxt+'</span>'+
+        '<span class="st-drow-b">'+brkTxt+'</span>'+
+        '<span class="st-drow-h">'+totTxt+'</span>'+
+        '<span class="st-drow-p">'+payTxt+'</span></div>';
     });
-    html += '<div class="st-daylist"><div class="st-daylist-h">🗓️ 일별 근무 내역</div>'+dayRows+'</div>';
+    html += '<div class="st-daylist"><div class="st-daylist-h">🗓️ 일별 근무 내역</div>'+
+      '<div class="st-drow head"><span class="st-drow-d">날짜</span><span class="st-drow-t">근무시간</span>'+
+      '<span class="st-drow-b">휴게</span><span class="st-drow-h">인정</span><span class="st-drow-p">금액</span></div>'+
+      dayRows+'</div>';
+    html += '<div class="st-stmt-note" style="text-align:left">※ 일별 금액은 <strong>시급 × 인정시간</strong>으로 계산한 참고값입니다. 주휴수당'+(state.fiveOrMore?'·연장·야간·공휴일 가산':'')+'은 포함되지 않아 위 총 급여와 합계가 다를 수 있습니다.</div>';
   }
 
   if(state.fiveOrMore && empHasHoursMode(emp, yr, mo)){

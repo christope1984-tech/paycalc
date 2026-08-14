@@ -915,6 +915,13 @@ input:focus,select:focus,button:focus{outline:none;}
 .st-drow-h{width:44px;flex-shrink:0;text-align:center;color:#059669;font-weight:800;font-variant-numeric:tabular-nums;}
 .st-drow-p{width:74px;flex-shrink:0;text-align:right;color:#0f172a;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;}
 .st-drow.head .st-drow-h,.st-drow.head .st-drow-p,.st-drow.head .st-drow-t{color:#94a3b8;}
+.rst-card{border:1.5px solid #fee2e2;}
+.rst-warn{background:#fef2f2;border:1px dashed #fecaca;border-radius:9px;padding:9px 11px;font-size:11px;color:#b91c1c;font-weight:600;line-height:1.55;margin-bottom:10px;}
+.rst-btn{display:block;width:100%;padding:11px;margin-bottom:7px;border-radius:9px;font-size:12.5px;font-weight:800;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;color:#475569;}
+.rst-btn:last-child{margin-bottom:0;}
+.rst-btn.month{border-color:#cbd5e1;}
+.rst-btn.emp{border-color:#cbd5e1;}
+.rst-btn.all{background:#fef2f2;border-color:#fecaca;color:#b91c1c;}
 .st-share-hint{margin-top:7px;font-size:10px;color:#94a3b8;font-weight:600;text-align:center;line-height:1.5;}
 
 </style>
@@ -942,7 +949,6 @@ input:focus,select:focus,button:focus{outline:none;}
     </div>
     <div class="hdr-btns">
       <span class="demo-badge" onclick="switchTab('staff')">DEMO</span>
-      <button class="hdr-reset" onclick="resetCurrentTab()">초기화</button>
     </div>
   </div>
   <div class="tabs">
@@ -1015,6 +1021,14 @@ input:focus,select:focus,button:focus{outline:none;}
     <div class="card-b" id="emp-list"></div>
   </div>
 
+  <div class="card rst-card">
+    <div class="card-h"><span class="card-t">🗑️ 직원 초기화</span><span class="card-sub">되돌릴 수 없음</span></div>
+    <div class="card-b">
+      <div class="rst-warn">직원 명단과 <strong>모든 출근 기록·명세서가 함께 삭제</strong>됩니다. 삭제 전 위에서 백업 파일을 저장해 두세요.</div>
+      <button class="rst-btn all" onclick="resetStaffAll()">⚠️ 직원 전체 삭제</button>
+    </div>
+  </div>
+
 </div>
 
 <!-- ━━ 탭3: 출근부 (날짜 중심 입력) ━━ -->
@@ -1056,6 +1070,16 @@ input:focus,select:focus,button:focus{outline:none;}
         <div class="st-sum-item wide"><div class="st-sum-label">예상 인건비</div><div class="st-sum-val green" id="cal-sum-pay">0원</div></div>
       </div>
       <button class="st-goto-stmt" onclick="switchTab('stmt')">📄 직원별 명세서 보기</button>
+    </div>
+  </div>
+
+  <div class="card rst-card">
+    <div class="card-h"><span class="card-t">🗑️ 출근 기록 초기화</span><span class="card-sub">되돌릴 수 없음</span></div>
+    <div class="card-b">
+      <div class="rst-warn">삭제 전 <strong>직원 탭에서 백업 파일을 저장</strong>해 두세요. 삭제한 기록은 복구할 수 없습니다.</div>
+      <button class="rst-btn month" onclick="resetCalMonth()">📅 이번 달 기록만 삭제</button>
+      <button class="rst-btn emp" onclick="resetCalEmp()">👤 직원 선택해서 삭제</button>
+      <button class="rst-btn all" onclick="resetCalAll()">⚠️ 전체 출근 기록 삭제</button>
     </div>
   </div>
 
@@ -1298,30 +1322,88 @@ function switchTab(tab){
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
-function resetCurrentTab(){
-  if(state.activeTab === 'staff'){
-    if(state.employees.length === 0){ toast('등록된 직원이 없습니다'); return; }
-    if(!confirm('직원 명단과 모든 출근 기록을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
-    state.employees = [];
-    state.records = {};
-    state.selectedDate = null;
-    state.stmtEmpId = '__all__';
-    save();
-    renderStaff();
-    toast('직원 명단이 초기화되었습니다');
-  }else if(state.activeTab === 'cal'){
-    if(!confirm((state.mo+1)+'월의 출근 기록을 전부 삭제하시겠습니까?')) return;
-    const prefix = state.yr + '-' + p2(state.mo+1) + '-';
-    Object.keys(state.records).forEach(function(ds){
-      if(ds.indexOf(prefix) === 0) delete state.records[ds];
-    });
-    state.selectedDate = null;
-    save();
-    renderCal();
-    toast((state.mo+1)+'월 기록이 초기화되었습니다');
-  }else{
-    toast('이 탭은 초기화할 항목이 없습니다');
-  }
+// ══════════════════════════════════════════════════════════════
+// 🗑️ 초기화 (탭별 · 각 탭 하단 배치)
+// ══════════════════════════════════════════════════════════════
+function clearNewEmpInputs(){
+  const n = document.getElementById('emp-new-name');
+  const wg = document.getElementById('emp-new-wage');
+  if(n) n.value = '';
+  if(wg) wg.value = '';
+  document.querySelectorAll('#pane-staff .wage-preset').forEach(function(b){ b.classList.remove('on'); });
+}
+
+function resetStaffAll(){
+  if(state.employees.length === 0){ clearNewEmpInputs(); toast('등록된 직원이 없습니다'); return; }
+  let recCnt = 0;
+  Object.keys(state.records).forEach(function(ds){ recCnt += Object.keys(state.records[ds]).length; });
+  if(!confirm('⚠️ 직원 '+state.employees.length+'명과 출근 기록 '+recCnt+'건을 모두 삭제합니다.\n\n명세서·통계도 함께 사라지며 되돌릴 수 없습니다.\n백업 파일을 저장하셨나요?')) return;
+  state.employees = [];
+  state.records = {};
+  state.selectedDate = null;
+  state.stmtEmpId = '__all__';
+  clearNewEmpInputs();
+  save();
+  renderStaff();
+  toast('직원 명단이 초기화되었습니다');
+}
+
+function resetCalMonth(){
+  const prefix = state.yr + '-' + p2(state.mo+1) + '-';
+  let cnt = 0;
+  Object.keys(state.records).forEach(function(ds){
+    if(ds.indexOf(prefix) === 0) cnt += Object.keys(state.records[ds]).length;
+  });
+  if(cnt === 0){ toast(state.yr+'년 '+(state.mo+1)+'월에는 삭제할 기록이 없습니다'); return; }
+  if(!confirm(state.yr+'년 '+(state.mo+1)+'월 출근 기록 '+cnt+'건을 삭제합니다.\n다른 달 기록과 직원 명단은 유지됩니다.\n\n계속하시겠습니까?')) return;
+  Object.keys(state.records).forEach(function(ds){
+    if(ds.indexOf(prefix) === 0) delete state.records[ds];
+  });
+  state.selectedDate = null;
+  save();
+  renderCal();
+  toast((state.mo+1)+'월 기록이 삭제되었습니다');
+}
+
+function resetCalEmp(){
+  const list = state.employees;
+  if(list.length === 0){ toast('등록된 직원이 없습니다'); return; }
+  let msg = '기록을 삭제할 직원 번호를 입력하세요.\n\n';
+  list.forEach(function(e, i){
+    let c = 0;
+    Object.keys(state.records).forEach(function(ds){ if(state.records[ds][e.id]) c++; });
+    msg += (i+1)+'. '+e.name+(e.retired?' (퇴사)':'')+' — '+c+'일치\n';
+  });
+  const inp = prompt(msg, '');
+  if(inp === null) return;
+  const idx = parseInt(inp, 10) - 1;
+  if(isNaN(idx) || idx < 0 || idx >= list.length){ toast('올바른 번호를 입력해주세요'); return; }
+  const emp = list[idx];
+  let cnt = 0;
+  Object.keys(state.records).forEach(function(ds){ if(state.records[ds][emp.id]) cnt++; });
+  if(cnt === 0){ toast(emp.name+'님의 출근 기록이 없습니다'); return; }
+  if(!confirm(emp.name+'님의 출근 기록 '+cnt+'일치를 전부 삭제합니다.\n(직원 정보와 다른 직원 기록은 유지)\n\n계속하시겠습니까?')) return;
+  Object.keys(state.records).forEach(function(ds){
+    if(state.records[ds][emp.id]){
+      delete state.records[ds][emp.id];
+      if(Object.keys(state.records[ds]).length === 0) delete state.records[ds];
+    }
+  });
+  save();
+  renderCal();
+  toast(emp.name+'님의 출근 기록이 삭제되었습니다');
+}
+
+function resetCalAll(){
+  let cnt = 0;
+  Object.keys(state.records).forEach(function(ds){ cnt += Object.keys(state.records[ds]).length; });
+  if(cnt === 0){ toast('삭제할 출근 기록이 없습니다'); return; }
+  if(!confirm('⚠️ 전체 기간의 출근 기록 '+cnt+'건을 모두 삭제합니다.\n\n모든 달의 명세서·통계가 사라지며 되돌릴 수 없습니다.\n(직원 명단은 유지됩니다)\n\n백업 파일을 저장하셨나요?')) return;
+  state.records = {};
+  state.selectedDate = null;
+  save();
+  renderCal();
+  toast('전체 출근 기록이 삭제되었습니다');
 }
 
 function changeMonth(delta){

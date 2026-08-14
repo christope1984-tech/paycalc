@@ -1433,7 +1433,6 @@ function resetCalEmp(){
     if(c > 0) hasRec = true;
     html += '<label class="rse-item'+(c===0?' none':'')+'">'+
       '<input type="checkbox" class="rse-chk" value="'+e.id+'"'+(c===0?' disabled':'')+'><span class="rse-box"></span>'+
-      '<span class="emp-dot sm" style="background:'+empColor(e.id)+'"></span>'+
       '<span class="rse-name">'+esc(e.name)+(e.retired?' <span class="emp-retired-tag">퇴사</span>':'')+'</span>'+
       '<span class="rse-cnt">'+(c>0? c+'일치' : '기록 없음')+'</span>'+
     '</label>';

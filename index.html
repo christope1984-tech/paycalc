@@ -917,6 +917,17 @@ input:focus,select:focus,button:focus{outline:none;}
 .rst-btn.month{border-color:#cbd5e1;}
 .rst-btn.emp{border-color:#cbd5e1;}
 .rst-btn.all{background:#fef2f2;border-color:#fecaca;color:#b91c1c;}
+.rse-sub{font-size:11.5px;color:#64748b;font-weight:600;line-height:1.6;margin-bottom:12px;}
+.rse-list{max-height:46vh;overflow-y:auto;border:1px solid #e2e8f0;border-radius:11px;margin-bottom:13px;}
+.rse-item{display:flex;align-items:center;gap:8px;padding:12px 12px;border-bottom:1px solid #f1f5f9;cursor:pointer;font-size:13px;}
+.rse-item:last-child{border-bottom:none;}
+.rse-item.none{opacity:.45;cursor:default;}
+.rse-chk{width:19px;height:19px;flex-shrink:0;accent-color:#dc2626;}
+.rse-name{flex:1;font-weight:800;color:#0f172a;}
+.rse-cnt{font-size:11px;font-weight:700;color:#94a3b8;white-space:nowrap;}
+.rse-btns{display:flex;gap:8px;}
+.rse-cancel{flex:1;padding:13px;border:1.5px solid #e2e8f0;background:#fff;border-radius:11px;color:#64748b;font-size:13.5px;font-weight:800;cursor:pointer;}
+.rse-go{flex:1.4;padding:13px;border:none;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:11px;color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;}
 .st-share-hint{margin-top:7px;font-size:10px;color:#94a3b8;font-weight:600;text-align:center;line-height:1.5;}
 
 </style>
@@ -1138,6 +1149,18 @@ input:focus,select:focus,button:focus{outline:none;}
 
 </div>
 
+<div class="hs-overlay" id="rse-overlay" onclick="if(event.target===this)closeResetEmp()">
+  <div class="hs-modal">
+    <div class="hs-title">👤 직원별 출근 기록 삭제</div>
+    <div class="rse-sub">기록을 삭제할 직원을 선택하세요. 선택한 직원의 <strong>전 기간 출근 기록</strong>이 삭제되며, 직원 정보와 다른 직원 기록은 유지됩니다.</div>
+    <div class="rse-list" id="rse-list"></div>
+    <div class="rse-btns">
+      <button class="rse-cancel" onclick="closeResetEmp()">취소</button>
+      <button class="rse-go" onclick="confirmResetEmp()">선택 기록 삭제</button>
+    </div>
+  </div>
+</div>
+
 <div class="hs-overlay" id="hs-overlay" onclick="if(event.target===this)closeHomeShortcut()">
   <div class="hs-modal">
     <div class="hs-title">📱 홈 화면에 바로가기 만들기</div>
@@ -1357,30 +1380,51 @@ function resetCalMonth(){
 function resetCalEmp(){
   const list = state.employees;
   if(list.length === 0){ toast('등록된 직원이 없습니다'); return; }
-  let msg = '기록을 삭제할 직원 번호를 입력하세요.\n\n';
-  list.forEach(function(e, i){
+  let html = '';
+  let hasRec = false;
+  list.forEach(function(e){
     let c = 0;
     Object.keys(state.records).forEach(function(ds){ if(state.records[ds][e.id]) c++; });
-    msg += (i+1)+'. '+e.name+(e.retired?' (퇴사)':'')+' — '+c+'일치\n';
+    if(c > 0) hasRec = true;
+    html += '<label class="rse-item'+(c===0?' none':'')+'">'+
+      '<input type="checkbox" class="rse-chk" value="'+e.id+'"'+(c===0?' disabled':'')+'>'+
+      '<span class="emp-dot sm" style="background:'+empColor(e.id)+'"></span>'+
+      '<span class="rse-name">'+esc(e.name)+(e.retired?' <span class="emp-retired-tag">퇴사</span>':'')+'</span>'+
+      '<span class="rse-cnt">'+(c>0? c+'일치' : '기록 없음')+'</span>'+
+    '</label>';
   });
-  const inp = prompt(msg, '');
-  if(inp === null) return;
-  const idx = parseInt(inp, 10) - 1;
-  if(isNaN(idx) || idx < 0 || idx >= list.length){ toast('올바른 번호를 입력해주세요'); return; }
-  const emp = list[idx];
-  let cnt = 0;
-  Object.keys(state.records).forEach(function(ds){ if(state.records[ds][emp.id]) cnt++; });
-  if(cnt === 0){ toast(emp.name+'님의 출근 기록이 없습니다'); return; }
-  if(!confirm(emp.name+'님의 출근 기록 '+cnt+'일치를 전부 삭제합니다.\n(직원 정보와 다른 직원 기록은 유지)\n\n계속하시겠습니까?')) return;
-  Object.keys(state.records).forEach(function(ds){
-    if(state.records[ds][emp.id]){
-      delete state.records[ds][emp.id];
-      if(Object.keys(state.records[ds]).length === 0) delete state.records[ds];
-    }
+  if(!hasRec){ toast('삭제할 출근 기록이 없습니다'); return; }
+  document.getElementById('rse-list').innerHTML = html;
+  document.getElementById('rse-overlay').classList.add('show');
+}
+function closeResetEmp(){
+  document.getElementById('rse-overlay').classList.remove('show');
+}
+function confirmResetEmp(){
+  const ids = [].slice.call(document.querySelectorAll('#rse-list .rse-chk:checked')).map(function(c){ return c.value; });
+  if(ids.length === 0){ toast('삭제할 직원을 선택해주세요'); return; }
+  const names = [], counts = {};
+  let total = 0;
+  ids.forEach(function(id){
+    const e = getEmp(id);
+    let c = 0;
+    Object.keys(state.records).forEach(function(ds){ if(state.records[ds][id]) c++; });
+    counts[id] = c; total += c;
+    if(e) names.push(e.name+' ('+c+'일)');
+  });
+  if(!confirm(names.join(', ')+'\n\n위 직원의 출근 기록 총 '+total+'일치를 삭제합니다.\n(직원 정보와 다른 직원 기록은 유지)\n\n계속하시겠습니까?')) return;
+  ids.forEach(function(id){
+    Object.keys(state.records).forEach(function(ds){
+      if(state.records[ds][id]){
+        delete state.records[ds][id];
+        if(Object.keys(state.records[ds]).length === 0) delete state.records[ds];
+      }
+    });
   });
   save();
+  closeResetEmp();
   renderCal();
-  toast(emp.name+'님의 출근 기록이 삭제되었습니다');
+  toast('선택한 직원의 출근 기록이 삭제되었습니다 (총 '+total+'일치)');
 }
 
 function resetCalAll(){

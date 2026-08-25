@@ -2924,17 +2924,55 @@ async function copyResultAsImage(elementId, filename){
         }
       }
     });
-    const b = await new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png', 0.95); });
-    if(!b) throw new Error('이미지 생성 실패');
-    return b;
+    return canvas;
+  }
+
+  // ★ 캔버스 → Blob
+  function canvasToBlob(cv){
+    return new Promise(function(resolve, reject){
+      cv.toBlob(function(b){ b ? resolve(b) : reject(new Error('이미지 생성 실패')); }, 'image/png', 0.95);
+    });
+  }
+
+  // ★ 세로로 긴 이미지는 여러 장으로 분할
+  //   카카오톡 등 메신저가 '긴 변' 기준으로 리사이즈하기 때문에,
+  //   한 장이 너무 길면 폭이 심하게 줄어 글씨가 뭉개짐 → 비율 제한으로 화질 보존
+  const MAX_RATIO = 2.2;      // 높이/폭 최대 비율
+  const OVERLAP = 40;          // 조각 경계 겹침(px) — 잘린 줄 보완
+  async function canvasToBlobs(cv){
+    const ratio = cv.height / cv.width;
+    if(ratio <= MAX_RATIO) return [await canvasToBlob(cv)];
+    const parts = Math.ceil(ratio / MAX_RATIO);
+    const sliceH = Math.ceil(cv.height / parts);
+    const blobs = [];
+    for(let i = 0; i < parts; i++){
+      const sy = Math.max(0, i * sliceH - (i > 0 ? OVERLAP : 0));
+      const sh = Math.min(cv.height - sy, sliceH + (i > 0 ? OVERLAP : 0));
+      const part = document.createElement('canvas');
+      part.width = cv.width;
+      part.height = sh + 46;
+      const ctx = part.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, part.width, part.height);
+      ctx.drawImage(cv, 0, sy, cv.width, sh, 0, 0, cv.width, sh);
+      // 페이지 표시
+      ctx.fillStyle = '#f1f5f9';
+      ctx.fillRect(0, sh + 6, part.width, 40);
+      ctx.fillStyle = '#64748b';
+      ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText((i+1) + ' / ' + parts, part.width / 2, sh + 33);
+      blobs.push(await canvasToBlob(part));
+    }
+    return blobs;
   }
 
   // 다운로드 폴백
-  function downloadBlob(blob){
+  function downloadBlob(blob, page, total){
     const downloadUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = downloadUrl;
-    a.download = filename + '_' + new Date().toISOString().slice(0,10) + '.png';
+    a.download = filename + '_' + new Date().toISOString().slice(0,10) + (total > 1 ? '_'+page+'of'+total : '') + '.png';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -2945,27 +2983,43 @@ async function copyResultAsImage(elementId, filename){
   // 모바일: Web Share(공유창→카톡 바로 전송) → 클립보드 → 다운로드
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   if(isMobile){
-    let blob = null;
+    let blobs = null;
     try{
-      blob = await getBlob();
+      blobs = await canvasToBlobs(await getBlob());
     }catch(e){
       toast('❌ 이미지 생성 실패: ' + e.message);
       return;
     }
+    const blob = blobs[0];
 
     // ★ 1차: Web Share API — 공유창이 바로 떠서 카톡 선택 → 전송 (붙여넣기 과정 생략)
     if(navigator.share && typeof navigator.canShare === 'function'){
       try{
-        const file = new File([blob], filename + '.png', { type: 'image/png' });
-        if(navigator.canShare({ files: [file] })){
-          await navigator.share({ files: [file], title: filename });
-          toast('✅ 공유되었습니다!');
+        const files = blobs.map(function(b, i){
+          return new File([b], filename + (blobs.length > 1 ? '_' + (i+1) : '') + '.png', { type: 'image/png' });
+        });
+        if(navigator.canShare({ files: files })){
+          await navigator.share({ files: files, title: filename });
+          toast(blobs.length > 1 ? '✅ '+blobs.length+'장으로 나눠 공유했습니다\n(내용이 길어 화질 보존을 위해 분할)' : '✅ 공유되었습니다!');
+          return;
+        }
+        // 여러 장 공유 미지원 시 첫 장만이라도
+        if(blobs.length > 1 && navigator.canShare({ files: [files[0]] })){
+          for(let i = 0; i < blobs.length; i++) downloadBlob(blobs[i], i+1, blobs.length);
+          toast('📥 내용이 길어 '+blobs.length+'장으로 저장했습니다');
           return;
         }
       }catch(err){
         if(err && err.name === 'AbortError') return; // 사용자가 공유 취소 → 조용히 종료
         console.warn('Web Share 실패:', err);
       }
+    }
+
+    // 분할된 경우: 클립보드는 1장만 가능하므로 전부 저장
+    if(blobs.length > 1){
+      for(let i = 0; i < blobs.length; i++) downloadBlob(blobs[i], i+1, blobs.length);
+      toast('📥 내용이 길어 '+blobs.length+'장으로 저장했습니다');
+      return;
     }
 
     // ★ 2차: 클립보드 복사 (공유 미지원 환경)
@@ -2990,9 +3044,15 @@ async function copyResultAsImage(elementId, filename){
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // PC: 캡처 → Clipboard → 다운로드
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  let blob = null;
+  let blob = null, pcBlobs = null;
   try{
-    blob = await getBlob();
+    pcBlobs = await canvasToBlobs(await getBlob());
+    blob = pcBlobs[0];
+    if(pcBlobs.length > 1){
+      for(let i = 0; i < pcBlobs.length; i++) downloadBlob(pcBlobs[i], i+1, pcBlobs.length);
+      toast('📥 내용이 길어 '+pcBlobs.length+'장으로 저장했습니다');
+      return;
+    }
   }catch(e){
     toast('❌ 이미지 생성 실패: ' + e.message);
     return;

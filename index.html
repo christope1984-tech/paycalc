@@ -948,6 +948,7 @@ input:focus,select:focus,button:focus{outline:none;}
 .st-drow.sum{background:#f0f9ff;border-top:1.5px solid #bae6fd;border-bottom:none;font-weight:900;}
 .st-drow.sum .st-drow-d,.st-drow.sum .st-drow-t,.st-drow.sum .st-drow-h,.st-drow.sum .st-drow-p{color:#0369a1;font-weight:900;}
 .st-drow.sum .st-drow-b{color:#7dd3fc;}
+.st-pdf-btn{margin-top:8px;background:linear-gradient(135deg,#3b82f6,#2563eb);box-shadow:0 4px 12px rgba(37,99,235,.3);}
 .st-share-hint{margin-top:7px;font-size:10px;color:#94a3b8;font-weight:600;text-align:center;line-height:1.5;}
 
 </style>
@@ -1130,7 +1131,10 @@ input:focus,select:focus,button:focus{outline:none;}
     <button class="copy-btn st-share-btn" onclick="shareStmt()">
       📸 이미지로 저장/복사 → 카카오톡 공유
     </button>
-    <div class="st-share-hint">버튼을 누르면 명세서가 이미지로 만들어져 클립보드에 복사되거나 공유창이 열립니다.</div>
+    <button class="copy-btn st-share-btn st-pdf-btn" id="stmt-pdf-btn" style="display:none" onclick="shareStmtPdf()">
+      📄 PDF로 공유 (권장 · 화질 유지)
+    </button>
+    <div class="st-share-hint" id="stmt-share-hint">버튼을 누르면 명세서가 이미지로 만들어져 클립보드에 복사되거나 공유창이 열립니다.</div>
   </div>
 
 </div>
@@ -2554,6 +2558,13 @@ function renderStmt(){
 
   const body = document.getElementById('stmt-body');
   const shareWrap = document.getElementById('stmt-share-wrap');
+  const pdfBtn = document.getElementById('stmt-pdf-btn');
+  const shareHint = document.getElementById('stmt-share-hint');
+  const isPersonal = state.stmtEmpId !== '__all__' && !!getEmp(state.stmtEmpId);
+  if(pdfBtn) pdfBtn.style.display = isPersonal ? '' : 'none';
+  if(shareHint) shareHint.textContent = isPersonal
+    ? '내역이 긴 명세서는 PDF가 글씨 깨짐 없이 전달됩니다. 카카오톡에서는 파일로 전송돼요.'
+    : '버튼을 누르면 명세서가 이미지로 만들어져 클립보드에 복사되거나 공유창이 열립니다.';
 
   if(state.employees.length === 0){
     body.innerHTML = '<div class="emp-empty">등록된 직원이 없습니다.<br><strong>직원</strong> 탭에서 먼저 직원을 등록해주세요.</div>';
@@ -2849,6 +2860,112 @@ function buildDeductRef(emp, r){
     '<div class="dr-note">'+note+'</div>'+
     '<div class="dr-warn">⚠️ 이 계산은 <strong>참고용 추정치</strong>이며 위 급여 금액에는 반영되지 않았습니다. 실제 공제액과 신고는 세무 대리인을 통해 확정하세요.</div>'+
   '</div>';
+}
+
+// ══════════════════════════════════════════════════════════════
+// 📄 PDF 공유 (개인 명세서 전용 — 화질 열화 없이 전달)
+// ══════════════════════════════════════════════════════════════
+let _jsPdfPromise = null;
+function loadJsPDF(){
+  if(window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  if(_jsPdfPromise) return _jsPdfPromise;
+  _jsPdfPromise = new Promise(function(resolve, reject){
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.crossOrigin = 'anonymous';
+    script.onload = function(){
+      if(window.jspdf && window.jspdf.jsPDF) resolve(window.jspdf.jsPDF);
+      else reject(new Error('PDF 라이브러리 로드 실패'));
+    };
+    script.onerror = function(){ reject(new Error('CDN 로드 실패 (인터넷 연결 확인)')); };
+    document.head.appendChild(script);
+  });
+  return _jsPdfPromise;
+}
+
+async function shareStmtPdf(){
+  const emp = getEmp(state.stmtEmpId);
+  if(!emp){ toast('직원을 선택한 뒤 이용해주세요'); return; }
+  const targetEl = document.getElementById('stmt-body');
+  if(!targetEl){ toast('❌ 명세서 영역을 찾지 못했습니다'); return; }
+  const filename = emp.name+'_'+state.yr+'년'+(state.mo+1)+'월_급여명세서';
+  toast('📄 PDF 만드는 중...');
+
+  try{
+    const [html2canvas, jsPDF] = await Promise.all([loadHtml2Canvas(), loadJsPDF()]);
+    const captureWidth = Math.max(480, Math.ceil(Math.max(targetEl.getBoundingClientRect().width, targetEl.offsetWidth)));
+    const captureHeight = Math.ceil(Math.max(targetEl.offsetHeight, targetEl.scrollHeight)) + 30;
+    const canvas = await html2canvas(targetEl, {
+      backgroundColor: '#ffffff', scale: 2, useCORS: true, allowTaint: false,
+      logging: false, imageTimeout: 5000,
+      width: captureWidth, height: captureHeight,
+      windowWidth: captureWidth, windowHeight: captureHeight, x:0, y:0,
+      onclone: function(clonedDoc){
+        const el = clonedDoc.getElementById('stmt-body');
+        if(!el) return;
+        el.style.position = 'static'; el.style.margin = '0'; el.style.padding = '14px 16px';
+        el.style.maxWidth = 'none'; el.style.width = captureWidth + 'px';
+        el.style.background = '#ffffff'; el.style.overflow = 'visible';
+        el.querySelectorAll('.ws-name').forEach(function(n){
+          n.style.background='none'; n.style.backgroundImage='none';
+          n.style.webkitBackgroundClip='border-box'; n.style.backgroundClip='border-box';
+          n.style.webkitTextFillColor='#059669'; n.style.color='#059669';
+        });
+        el.querySelectorAll('.ws-namebanner').forEach(function(n){
+          n.style.background='#f0fdf4'; n.style.backgroundImage='none';
+        });
+      }
+    });
+
+    // A4 세로에 폭 맞춰 배치 + 넘치면 페이지 분할
+    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 6;
+    const imgW = pageW - margin*2;
+    const pxPerMm = canvas.width / imgW;              // 이미지 px → mm 환산
+    const sliceHpx = Math.floor((pageH - margin*2) * pxPerMm);  // 한 페이지에 담기는 px 높이
+    const pages = Math.max(1, Math.ceil(canvas.height / sliceHpx));
+
+    for(let i = 0; i < pages; i++){
+      const sy = i * sliceHpx;
+      const sh = Math.min(sliceHpx, canvas.height - sy);
+      const part = document.createElement('canvas');
+      part.width = canvas.width; part.height = sh;
+      const ctx = part.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,part.width,part.height);
+      ctx.drawImage(canvas, 0, sy, canvas.width, sh, 0, 0, canvas.width, sh);
+      if(i > 0) pdf.addPage();
+      pdf.addImage(part.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgW, sh / pxPerMm);
+      if(pages > 1){
+        pdf.setFontSize(8); pdf.setTextColor(150);
+        pdf.text((i+1)+' / '+pages, pageW/2, pageH - 3, { align:'center' });
+      }
+    }
+
+    const blob = pdf.output('blob');
+    const file = new File([blob], filename + '.pdf', { type: 'application/pdf' });
+
+    if(navigator.share && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })){
+      try{
+        await navigator.share({ files: [file], title: filename });
+        toast('✅ PDF로 공유했습니다');
+        return;
+      }catch(err){
+        if(err && err.name === 'AbortError') return;
+        console.warn('PDF 공유 실패:', err);
+      }
+    }
+    // 폴백: 다운로드
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename + '.pdf';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    toast('📥 PDF가 저장되었습니다\n카카오톡에서 파일로 전송하세요');
+  }catch(e){
+    toast('❌ PDF 생성 실패: ' + e.message);
+  }
 }
 
 function shareStmt(){

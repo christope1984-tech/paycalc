@@ -934,6 +934,7 @@ input:focus,select:focus,button:focus{outline:none;}
 .rse-cancel{flex:1;padding:13px;border:1.5px solid #e2e8f0;background:#fff;border-radius:11px;color:#64748b;font-size:13.5px;font-weight:800;cursor:pointer;}
 .rse-go{flex:1.4;padding:13px;border:none;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:11px;color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;}
 #cfm-overlay{z-index:1200;}
+#pdfshare-overlay{z-index:1250;}
 #rse-overlay{z-index:1100;}
 .cfm-body{font-size:12.5px;color:#475569;font-weight:600;line-height:1.7;margin-bottom:15px;}
 .cfm-body strong{color:#0f172a;}
@@ -1182,6 +1183,18 @@ input:focus,select:focus,button:focus{outline:none;}
 
 <div class="footer">Powered by <span>문사무장 급여 시스템</span></div>
 
+</div>
+
+<div class="hs-overlay" id="pdfshare-overlay" onclick="if(event.target===this)closePdfShare()">
+  <div class="hs-modal">
+    <div class="hs-title">📄 PDF 준비 완료</div>
+    <div class="cfm-body" id="pdfshare-body"></div>
+    <button class="copy-btn st-share-btn" style="margin-bottom:8px" onclick="doPdfShare()">💬 카카오톡으로 공유하기</button>
+    <div class="rse-btns">
+      <button class="rse-cancel" onclick="closePdfShare()">닫기</button>
+      <button class="rse-cancel" onclick="doPdfDownload()">기기에 저장</button>
+    </div>
+  </div>
 </div>
 
 <div class="hs-overlay" id="cfm-overlay" onclick="if(event.target===this)cfmClose(false)">
@@ -2952,27 +2965,59 @@ async function shareStmtPdf(){
 
     const blob = pdf.output('blob');
     const file = new File([blob], filename + '.pdf', { type: 'application/pdf' });
+    _pdfShare = { blob: blob, file: file, filename: filename };
 
-    if(navigator.share && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })){
+    // ★ 1차: 즉시 공유 시도 (사용자 제스처가 살아있는 경우)
+    if(navigator.share && (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] }))){
       try{
         await navigator.share({ files: [file], title: filename });
         toast('✅ PDF로 공유했습니다');
         return;
       }catch(err){
-        if(err && err.name === 'AbortError') return;
-        console.warn('PDF 공유 실패:', err);
+        if(err && err.name === 'AbortError') return;   // 사용자가 공유창에서 취소
+        console.warn('즉시 공유 실패 → 재시도 안내:', err);
       }
     }
-    // 폴백: 다운로드
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename + '.pdf';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-    toast('📥 PDF가 저장되었습니다\n카카오톡에서 파일로 전송하세요');
+
+    // ★ 2차: 공유 버튼 모달 — 버튼 탭이 곧 사용자 제스처라 차단되지 않음
+    document.getElementById('pdfshare-body').innerHTML =
+      '<strong>'+esc(filename)+'.pdf</strong><br>아래 <strong>공유하기</strong>를 누르면 카카오톡·메일 등으로 바로 보낼 수 있습니다.'+
+      (pages > 1 ? '<br><span style="color:#64748b;font-size:11.5px">총 '+pages+'페이지 · 화질 저하 없음</span>' : '');
+    document.getElementById('pdfshare-overlay').classList.add('show');
   }catch(e){
     toast('❌ PDF 생성 실패: ' + e.message);
   }
+}
+
+let _pdfShare = null;
+function closePdfShare(){
+  document.getElementById('pdfshare-overlay').classList.remove('show');
+}
+async function doPdfShare(){
+  if(!_pdfShare){ closePdfShare(); return; }
+  if(!navigator.share){
+    toast('이 브라우저는 파일 공유를 지원하지 않습니다\n[기기에 저장] 후 카카오톡에서 파일로 보내주세요');
+    return;
+  }
+  try{
+    await navigator.share({ files: [_pdfShare.file], title: _pdfShare.filename });
+    closePdfShare();
+    toast('✅ PDF로 공유했습니다');
+  }catch(err){
+    if(err && err.name === 'AbortError') return;
+    console.warn('PDF 공유 실패:', err);
+    toast('공유에 실패했습니다\n[기기에 저장]을 이용해주세요');
+  }
+}
+function doPdfDownload(){
+  if(!_pdfShare) return;
+  const url = URL.createObjectURL(_pdfShare.blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = _pdfShare.filename + '.pdf';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  closePdfShare();
+  toast('📥 PDF가 저장되었습니다\n카카오톡에서 파일로 전송하세요');
 }
 
 function shareStmt(){

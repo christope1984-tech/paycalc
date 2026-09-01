@@ -943,6 +943,11 @@ input:focus,select:focus,button:focus{outline:none;}
 .emp-ord{display:inline-flex;gap:3px;margin-left:auto;margin-right:6px;}
 .emp-ord-btn{width:28px;height:28px;padding:0;border:1.5px solid #e2e8f0;background:#fff;border-radius:7px;color:#64748b;font-size:11px;font-weight:900;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;}
 .emp-ord-btn:disabled{opacity:.3;cursor:default;}
+.st-hp-hours{flex-shrink:0;font-size:10px;font-weight:800;color:#059669;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:5px;padding:2px 6px;margin-right:6px;white-space:nowrap;}
+.st-hp-hours.dim{color:#cbd5e1;background:transparent;border-color:transparent;}
+.st-drow.sum{background:#f0f9ff;border-top:1.5px solid #bae6fd;border-bottom:none;font-weight:900;}
+.st-drow.sum .st-drow-d,.st-drow.sum .st-drow-t,.st-drow.sum .st-drow-h,.st-drow.sum .st-drow-p{color:#0369a1;font-weight:900;}
+.st-drow.sum .st-drow-b{color:#7dd3fc;}
 .st-share-hint{margin-top:7px;font-size:10px;color:#94a3b8;font-weight:600;text-align:center;line-height:1.5;}
 
 </style>
@@ -2282,7 +2287,7 @@ function updRecBrk(empId, v){
 function calcEmpWeekPay(emp, wkDates, opts){
   const wage = parseInt(emp.wage) || 0;
   const fiveOrMore = state.fiveOrMore;
-  let totH=0, ngtH=0, wd=0, dailyOtSum=0;
+  let totH=0, ngtH=0, wd=0, moWd=0, dailyOtSum=0;
   let paidH=0, hasAbsent=false;
   let fullWeekH=0, fullWeekDailyOt=0;
   let holH=0, holH8under=0, holH8over=0;
@@ -2308,6 +2313,7 @@ function calcEmpWeekPay(emp, wkDates, opts){
     if(fiveOrMore) fullWeekDailyOt += Math.max(0, h - CFG.otThresh);
 
     if(!targetDates || targetDates.has(ds)){
+      if(h > 0 || ph > 0) moWd++;   // ★ 해당 월에 속한 근무일만 카운트 (월 경계 주 전월분 제외)
       if(h > 0){ totH += h; ngtH += nh; }
       if(ph > 0) paidH += ph;
       if(fiveOrMore) dailyOtSum += Math.max(0, h - CFG.otThresh);
@@ -2344,7 +2350,7 @@ function calcEmpWeekPay(emp, wkDates, opts){
   const laborDayPay = Math.round(laborDayHWork * wage);
 
   if(opts && opts.skipHp){
-    return { totH:totH, ngtH:ngtH, dotH:dotH, holH:holH, wd:wd, elig:false, under15:under15, fullWeekH:fullWeekH, hasAbsent:hasAbsent, paidH:paidH, paidPay:paidPay,
+    return { totH:totH, ngtH:ngtH, dotH:dotH, holH:holH, wd:wd, moWd:moWd, elig:false, under15:under15, fullWeekH:fullWeekH, hasAbsent:hasAbsent, paidH:paidH, paidPay:paidPay,
       base:base, otEx:otEx, nEx:nEx, holEx:holEx, laborDayPay:laborDayPay,
       hp:0, hpH:0, total: base+paidPay+otEx+nEx+holEx+laborDayPay };
   }
@@ -2354,7 +2360,7 @@ function calcEmpWeekPay(emp, wkDates, opts){
   const hpH = elig ? Math.min(hpBaseH, CFG.stdW)/CFG.stdW * CFG.maxHolH : 0;
   const hp = Math.round(hpH * wage);
 
-  return { totH:totH, ngtH:ngtH, dotH:dotH, holH:holH, wd:wd, elig:elig, under15:under15, fullWeekH:fullWeekH, hasAbsent:hasAbsent, paidH:paidH, paidPay:paidPay,
+  return { totH:totH, ngtH:ngtH, dotH:dotH, holH:holH, wd:wd, moWd:moWd, elig:elig, under15:under15, fullWeekH:fullWeekH, hasAbsent:hasAbsent, paidH:paidH, paidPay:paidPay,
     base:base, otEx:otEx, nEx:nEx, holEx:holEx, laborDayPay:laborDayPay,
     hp:hp, hpH:hpH, total: base+paidPay+otEx+nEx+holEx+laborDayPay+hp };
 }
@@ -2371,7 +2377,7 @@ function calcEmpMonth(emp, yr, mo){
     const lastWeekCrosses = isLastWeek && (lastDayOfWeek.getMonth() !== mo || lastDayOfWeek.getFullYear() !== yr);
     const skipHp = isLastWeek && lastWeekCrosses;
     const w = calcEmpWeekPay(emp, wk, { onlyDates: moDatesSet, skipHp: skipHp });
-    totH += w.totH; ngtH += w.ngtH; dotH += w.dotH; holH += (w.holH||0); wd += w.wd;
+    totH += w.totH; ngtH += w.ngtH; dotH += w.dotH; holH += (w.holH||0); wd += (w.moWd !== undefined ? w.moWd : w.wd);
     paidH += w.paidH; paidPay += w.paidPay;
     base += w.base; otEx += w.otEx; nEx += w.nEx;
     holEx += (w.holEx||0); laborDayPay += (w.laborDayPay||0);
@@ -2636,8 +2642,13 @@ function buildWeeklyHpRows(emp, yr, mo){
     }else{
       status = '<span class="st-hp-badge no">개근 미달 ('+r.wd+'/'+(emp.minDays||5)+'일)</span>';
     }
+    const hpHr = Math.round((r.hpH||0)*100)/100;
+    const hpTxt = (!skipHp && r.elig && hpHr > 0)
+      ? '<span class="st-hp-hours">주휴 '+(hpHr%1===0?hpHr:hpHr.toFixed(1))+'h</span>'
+      : '<span class="st-hp-hours dim">-</span>';
     rows += '<div class="st-dayrow"><span class="st-dayrow-date">'+range+'</span>'+
       '<span class="st-dayrow-detail">'+r.wd+'일 · '+(hR%1===0?hR:hR.toFixed(1))+'h</span>'+
+      hpTxt+
       '<span class="st-dayrow-h" style="color:inherit">'+status+'</span></div>';
   });
   return { rows: rows, carryOut: carryOut, carryIn: carryIn };
@@ -2727,7 +2738,7 @@ function renderStmtEmp(body, emp){
     return ds.indexOf(prefix) === 0 && state.records[ds][emp.id];
   }).sort();
   if(dayKeys.length > 0){
-    let dayRows = '';
+    let dayRows = '', dayCnt = 0, sumH = 0, sumPay = 0;
     const wage = emp.wage || 0;
     const hFmtNum = function(x){ const v = Math.round(x*100)/100; return (v%1===0? v : v.toFixed(v*10%1===0?1:2)); };
     dayKeys.forEach(function(ds){
@@ -2742,6 +2753,7 @@ function renderStmtEmp(body, emp){
         const ph = Math.max(0, parseFloat(rec.hours)||0);
         timeTxt = '<span style="color:#059669;font-weight:800">유급휴가</span>';
         brkTxt = '-'; totTxt = hFmtNum(ph)+'h'; payTxt = W(Math.round(ph*wage))+'원';
+        dayCnt++; sumH += ph; sumPay += Math.round(ph*wage);
       }else{
         const hh = recH(rec);
         if(hh <= 0) return;
@@ -2754,6 +2766,7 @@ function renderStmtEmp(body, emp){
         brkTxt = rec.brk ? rec.brk+'분' : '-';
         totTxt = hFmtNum(hh)+'h';
         payTxt = W(Math.round(hh*wage))+'원';
+        dayCnt++; sumH += hh; sumPay += Math.round(hh*wage);
       }
       dayRows += '<div class="st-drow'+rowCls+'">'+
         '<span class="st-drow-d">'+parts[1]+'/'+parts[2]+' ('+dowName+')</span>'+
@@ -2765,7 +2778,13 @@ function renderStmtEmp(body, emp){
     html += '<div class="st-daylist"><div class="st-daylist-h">🗓️ 일별 근무 내역</div>'+
       '<div class="st-drow head"><span class="st-drow-d">날짜</span><span class="st-drow-t">근무시간</span>'+
       '<span class="st-drow-b">휴게</span><span class="st-drow-h">인정</span><span class="st-drow-p">금액</span></div>'+
-      dayRows+'</div>';
+      dayRows+
+      '<div class="st-drow sum"><span class="st-drow-d">합계</span>'+
+      '<span class="st-drow-t">'+dayCnt+'일</span>'+
+      '<span class="st-drow-b">-</span>'+
+      '<span class="st-drow-h">'+hFmtNum(sumH)+'h</span>'+
+      '<span class="st-drow-p">'+W(sumPay)+'원</span></div>'+
+      '</div>';
     html += '<div class="st-stmt-note" style="text-align:left">※ 일별 금액은 <strong>시급 × 인정시간</strong>으로 계산한 참고값입니다. 주휴수당'+(state.fiveOrMore?'·연장·야간·공휴일 가산':'')+'은 포함되지 않아 위 총 급여와 합계가 다를 수 있습니다.</div>';
   }
 

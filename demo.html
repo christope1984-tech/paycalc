@@ -961,6 +961,15 @@ input:focus,select:focus,button:focus{outline:none;}
 .hs-chrome-btn{display:block;text-align:center;padding:12px;background:linear-gradient(135deg,#3b82f6,#2563eb);border-radius:10px;color:#fff;font-size:13.5px;font-weight:800;text-decoration:none;margin-bottom:7px;}
 .hs-chrome-sub{display:block;text-align:center;font-size:11px;color:#2563eb;font-weight:700;text-decoration:underline;}
 .hs-or{font-size:11px;color:#94a3b8;font-weight:700;text-align:center;margin-bottom:8px;}
+#stmt-body .pi-calc-table{table-layout:fixed;}
+#stmt-body .pi-calc-table th:nth-child(1){width:27%;text-align:left;}
+#stmt-body .pi-calc-table th:nth-child(2){width:25%;text-align:center;}
+#stmt-body .pi-calc-table th:nth-child(3){width:22%;text-align:center;}
+#stmt-body .pi-calc-table th:nth-child(4){width:26%;text-align:right;}
+#stmt-body .pi-calc-table td:nth-child(1){text-align:left;white-space:nowrap;}
+#stmt-body .pi-calc-table td:nth-child(2),#stmt-body .pi-calc-table td:nth-child(3){text-align:center;white-space:nowrap;}
+#stmt-body .pi-calc-table td:nth-child(4){text-align:right;white-space:nowrap;}
+#stmt-body .pi-calc-table td,#stmt-body .pi-calc-table th{padding-left:3px;padding-right:3px;}
 .st-share-hint{margin-top:7px;font-size:10px;color:#94a3b8;font-weight:600;text-align:center;line-height:1.5;}
 
 </style>
@@ -2750,14 +2759,14 @@ function renderStmtEmp(body, emp){
 
   html += '<div class="ws-breakdown-wrap"><div class="pi-breakdown" style="margin-bottom:0">'+
     '<div class="pi-breakdown-h">💵 급여 산출 내역</div>'+
-    '<table>'+
+    '<table class="pi-calc-table">'+
       '<thead><tr><th>항목</th><th>시간</th><th>단가</th><th>금액</th></tr></thead>'+
       '<tbody>'+
         '<tr><td>기본급</td><td class="muted">'+Hfmt(r.totH)+'</td><td class="muted">'+W(wage)+'원</td><td class="amt">'+W(r.base)+'원</td></tr>'+
         (r.paidPay>0?'<tr class="green"><td>유급휴가</td><td class="muted">'+Hfmt(r.paidH)+'</td><td class="muted">'+W(wage)+'원</td><td class="amt green">'+W(r.paidPay)+'원</td></tr>':'')+
         (r.hp>0?'<tr class="green"><td>주휴수당</td><td class="muted">'+Hfmt(r.hpH)+'</td><td class="muted">'+W(wage)+'원</td><td class="amt green">'+W(r.hp)+'원</td></tr>':'')+
-        (r.otEx>0?'<tr class="amber"><td>연장수당</td><td class="muted">'+Hfmt(r.dotH)+' × 0.5</td><td class="muted">'+W(otRate)+'원</td><td class="amt amber">'+W(r.otEx)+'원</td></tr>':'')+
-        (r.nEx>0?'<tr class="purple"><td>야간수당</td><td class="muted">'+Hfmt(r.ngtH)+' × 0.5</td><td class="muted">'+W(otRate)+'원</td><td class="amt purple">'+W(r.nEx)+'원</td></tr>':'')+
+        (r.otEx>0?'<tr class="amber"><td>연장수당</td><td class="muted">'+Hfmt(r.dotH).replace('시간','h')+' ×0.5</td><td class="muted">'+W(otRate)+'원</td><td class="amt amber">'+W(r.otEx)+'원</td></tr>':'')+
+        (r.nEx>0?'<tr class="purple"><td>야간수당</td><td class="muted">'+Hfmt(r.ngtH).replace('시간','h')+' ×0.5</td><td class="muted">'+W(otRate)+'원</td><td class="amt purple">'+W(r.nEx)+'원</td></tr>':'')+
         (r.holEx>0?'<tr class="amber"><td>공휴일 수당</td><td class="muted">'+Hfmt(r.holH)+'</td><td class="muted">가산</td><td class="amt amber">'+W(r.holEx)+'원</td></tr>':'')+
         (r.laborDayPay>0?'<tr><td>노동절 수당</td><td class="muted">-</td><td class="muted">100%</td><td class="amt">'+W(r.laborDayPay)+'원</td></tr>':'')+
         '<tr class="total"><td>합계</td><td></td><td></td><td>'+W(r.total)+'원</td></tr>'+

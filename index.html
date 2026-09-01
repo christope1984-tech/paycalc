@@ -950,6 +950,12 @@ input:focus,select:focus,button:focus{outline:none;}
 .st-drow.sum .st-drow-d,.st-drow.sum .st-drow-t,.st-drow.sum .st-drow-h,.st-drow.sum .st-drow-p{color:#0369a1;font-weight:900;}
 .st-drow.sum .st-drow-b{color:#7dd3fc;}
 .st-pdf-btn{margin-top:8px;background:linear-gradient(135deg,#3b82f6,#2563eb);box-shadow:0 4px 12px rgba(37,99,235,.3);}
+.hs-chrome-box{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1.5px solid #93c5fd;border-radius:12px;padding:13px 14px;margin-bottom:12px;}
+.hs-chrome-t{font-size:13px;font-weight:800;color:#1d4ed8;margin-bottom:6px;}
+.hs-chrome-d{font-size:11.5px;color:#1e40af;font-weight:600;line-height:1.6;margin-bottom:10px;}
+.hs-chrome-btn{display:block;text-align:center;padding:12px;background:linear-gradient(135deg,#3b82f6,#2563eb);border-radius:10px;color:#fff;font-size:13.5px;font-weight:800;text-decoration:none;margin-bottom:7px;}
+.hs-chrome-sub{display:block;text-align:center;font-size:11px;color:#2563eb;font-weight:700;text-decoration:underline;}
+.hs-or{font-size:11px;color:#94a3b8;font-weight:700;text-align:center;margin-bottom:8px;}
 .st-share-hint{margin-top:7px;font-size:10px;color:#94a3b8;font-weight:600;text-align:center;line-height:1.5;}
 
 </style>
@@ -976,7 +982,7 @@ input:focus,select:focus,button:focus{outline:none;}
       </h1>
     </div>
     <div class="hdr-btns">
-      <button class="hdr-reset hdr-home" onclick="showHomeShortcut()">📱 바로가기</button>
+      <button class="hdr-reset hdr-home" onclick="showHomeShortcut()">📲 설치하기</button>
     </div>
   </div>
   <div class="tabs">
@@ -1211,7 +1217,7 @@ input:focus,select:focus,button:focus{outline:none;}
 
 <div class="hs-overlay" id="hs-overlay" onclick="if(event.target===this)closeHomeShortcut()">
   <div class="hs-modal">
-    <div class="hs-title">📱 홈 화면에 바로가기 만들기</div>
+    <div class="hs-title">📲 앱으로 설치하기</div>
     <div class="hs-warn">⚠️ 급여 기록은 <strong>지금 이 브라우저에만</strong> 저장돼 있어요.<br>바로가기로 열면 항상 이 브라우저로 돌아와서 <strong>데이터가 그대로 유지</strong>됩니다. 다른 브라우저나 카카오톡 안에서 열면 기록이 보이지 않아요.</div>
     <div class="hs-steps" id="hs-steps"></div>
     <button class="hs-close" onclick="closeHomeShortcut()">확인</button>
@@ -1817,7 +1823,15 @@ function showHomeShortcut(){
       '<div class="hs-step"><span class="hs-num">3</span>오른쪽 위 <strong>"추가"</strong>를 누르면 완료!</div>'+
       '<div class="hs-tip">💡 사파리에서 연 상태에서만 메뉴가 보여요. 카카오톡 안에서 열었다면 사파리로 먼저 여세요.</div>';
   }else if(isSamsung){
-    steps = '<div class="hs-step"><span class="hs-num">1</span>하단 <strong>메뉴(☰)</strong> 버튼을 누르세요</div>'+
+    const chromeUrl = 'intent://' + location.host + location.pathname + '#Intent;scheme=https;package=com.android.chrome;end';
+    steps = '<div class="hs-chrome-box">'+
+        '<div class="hs-chrome-t">🌟 크롬 브라우저를 권장합니다</div>'+
+        '<div class="hs-chrome-d">크롬에서는 <strong>버튼 한 번으로 앱 설치</strong>가 되고, 명세서 <strong>PDF 공유</strong>도 바로 됩니다. 삼성 인터넷은 일부 기능이 제한돼요.</div>'+
+        '<a class="hs-chrome-btn" href="'+chromeUrl+'">크롬으로 열기</a>'+
+        '<a class="hs-chrome-sub" href="https://play.google.com/store/apps/details?id=com.android.chrome" target="_blank">크롬이 없다면 · Play스토어에서 설치</a>'+
+      '</div>'+
+      '<div class="hs-or">또는 삼성 인터넷에서 계속하기</div>';
+    steps += '<div class="hs-step"><span class="hs-num">1</span>하단 <strong>메뉴(☰)</strong> 버튼을 누르세요</div>'+
       '<div class="hs-step"><span class="hs-num">2</span><strong>"현재 페이지 추가"</strong> → <strong>"홈 화면"</strong>을 선택하세요 (⚠️ "앱 설치" 말고!)</div>'+
       '<div class="hs-step"><span class="hs-num">3</span><strong>"추가"</strong>를 누르면 완료!</div>'+
       '<div class="hs-tip">💡 삼성 인터넷의 "앱 설치"를 누르면 Google Play 프로텍트 경고가 뜰 수 있어요 — 앱의 문제가 아니라 삼성 인터넷 설치 방식의 알려진 현상입니다. <strong>"홈 화면"</strong>으로 추가하거나 <strong>크롬 브라우저</strong>에서 설치하면 경고 없이 됩니다.</div>';
@@ -2930,31 +2944,38 @@ async function shareStmtPdf(){
       }
     });
 
-    // A4 세로에 폭 맞춰 배치 + 넘치면 페이지 분할
-    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const margin = 6;
-    const imgW = pageW - margin*2;
-    const pxPerMm = canvas.width / imgW;              // 이미지 px → mm 환산
-    const sliceHpx = Math.floor((pageH - margin*2) * pxPerMm);  // 한 페이지에 담기는 px 높이
-    const pages = Math.max(1, Math.ceil(canvas.height / sliceHpx));
+    // ★ 잘리지 않는 단일 연속 페이지 PDF (명세서 전체가 한 장에 이어짐)
+    const A4W = 210, margin = 6;
+    const imgW = A4W - margin*2;
+    const pxPerMm = canvas.width / imgW;               // 이미지 px → mm 환산
+    const imgH = canvas.height / pxPerMm;
+    const PDF_MAX_MM = 5080;                            // PDF 규격상 한 변 최대치
+    let pages = 1;
 
-    for(let i = 0; i < pages; i++){
-      const sy = i * sliceHpx;
-      const sh = Math.min(sliceHpx, canvas.height - sy);
-      const part = document.createElement('canvas');
-      part.width = canvas.width; part.height = sh;
-      const ctx = part.getContext('2d');
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,part.width,part.height);
-      ctx.drawImage(canvas, 0, sy, canvas.width, sh, 0, 0, canvas.width, sh);
-      if(i > 0) pdf.addPage();
-      pdf.addImage(part.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgW, sh / pxPerMm);
-      if(pages > 1){
-        pdf.setFontSize(8); pdf.setTextColor(150);
-        pdf.text((i+1)+' / '+pages, pageW/2, pageH - 3, { align:'center' });
+    let pdfDoc;
+    if(imgH + margin*2 <= PDF_MAX_MM){
+      // 내용 높이에 맞춘 커스텀 페이지 1장 — 페이지 넘김 없이 쭉 이어짐
+      pdfDoc = new jsPDF({ orientation:'portrait', unit:'mm', format:[A4W, imgH + margin*2] });
+      pdfDoc.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgW, imgH);
+    }else{
+      // 극단적으로 긴 경우에만 분할 (사실상 발생하지 않음)
+      pdfDoc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+      const pageH = pdfDoc.internal.pageSize.getHeight();
+      const sliceHpx = Math.floor((pageH - margin*2) * pxPerMm);
+      pages = Math.max(1, Math.ceil(canvas.height / sliceHpx));
+      for(let i = 0; i < pages; i++){
+        const sy = i * sliceHpx;
+        const sh = Math.min(sliceHpx, canvas.height - sy);
+        const part = document.createElement('canvas');
+        part.width = canvas.width; part.height = sh;
+        const ctx = part.getContext('2d');
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,part.width,part.height);
+        ctx.drawImage(canvas, 0, sy, canvas.width, sh, 0, 0, canvas.width, sh);
+        if(i > 0) pdfDoc.addPage();
+        pdfDoc.addImage(part.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgW, sh / pxPerMm);
       }
     }
+    const pdf = pdfDoc;
 
     const blob = pdf.output('blob');
     const file = new File([blob], filename + '.pdf', { type: 'application/pdf' });
@@ -2975,7 +2996,8 @@ async function shareStmtPdf(){
     // ★ 2차: 공유 버튼 모달 — 버튼 탭이 곧 사용자 제스처라 차단되지 않음
     document.getElementById('pdfshare-body').innerHTML =
       '<strong>'+esc(filename)+'.pdf</strong><br>아래 <strong>공유하기</strong>를 누르면 카카오톡·메일 등으로 바로 보낼 수 있습니다.'+
-      (pages > 1 ? '<br><span style="color:#64748b;font-size:11.5px">총 '+pages+'페이지 · 화질 저하 없음</span>' : '');
+      '<br><span style="color:#94a3b8;font-size:11px">공유가 안 되면 PDF 뷰어가 열립니다 — 뷰어의 공유 버튼을 이용하세요</span>'+
+      '<br><span style="color:#64748b;font-size:11.5px">'+(pages > 1 ? '총 '+pages+'페이지' : '한 장으로 이어진 문서')+' · 화질 저하 없음</span>';
     document.getElementById('pdfshare-overlay').classList.add('show');
   }catch(e){
     toast('❌ PDF 생성 실패: ' + e.message);
@@ -2988,19 +3010,38 @@ function closePdfShare(){
 }
 async function doPdfShare(){
   if(!_pdfShare){ closePdfShare(); return; }
-  if(!navigator.share){
-    toast('이 브라우저는 파일 공유를 지원하지 않습니다\n[기기에 저장] 후 카카오톡에서 파일로 보내주세요');
-    return;
+
+  // 1차: 파일 공유 (지원 시)
+  if(navigator.share && (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [_pdfShare.file] }))){
+    try{
+      await navigator.share({ files: [_pdfShare.file], title: _pdfShare.filename });
+      closePdfShare();
+      toast('✅ PDF로 공유했습니다');
+      return;
+    }catch(err){
+      if(err && err.name === 'AbortError') return;   // 사용자가 공유창에서 취소
+      console.warn('PDF 파일 공유 실패:', err);
+    }
   }
+
+  // 2차: 브라우저 PDF 뷰어로 열기 → 뷰어의 공유/내보내기 사용
+  //   (삼성 인터넷 등 파일 공유 미지원 브라우저 대응)
   try{
-    await navigator.share({ files: [_pdfShare.file], title: _pdfShare.filename });
-    closePdfShare();
-    toast('✅ PDF로 공유했습니다');
+    const url = URL.createObjectURL(_pdfShare.blob);
+    const win = window.open(url, '_blank');
+    if(win){
+      closePdfShare();
+      toast('📄 PDF를 열었습니다\n뷰어의 공유 버튼으로 카카오톡에 보내세요');
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+      return;
+    }
+    URL.revokeObjectURL(url);
   }catch(err){
-    if(err && err.name === 'AbortError') return;
-    console.warn('PDF 공유 실패:', err);
-    toast('공유에 실패했습니다\n[기기에 저장]을 이용해주세요');
+    console.warn('PDF 열기 실패:', err);
   }
+
+  // 3차: 저장 안내
+  toast('이 브라우저는 파일 공유를 지원하지 않습니다\n[기기에 저장] 후 카카오톡에서 파일로 보내주세요');
 }
 function doPdfDownload(){
   if(!_pdfShare) return;

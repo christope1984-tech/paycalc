@@ -945,6 +945,9 @@ input:focus,select:focus,button:focus{outline:none;}
 .rse-chk:checked + .rse-box::after{content:'✓';}
 .rse-item.none .rse-box{background:#f1f5f9;border-color:#e2e8f0;}
 .rse-empty{padding:10px 2px;font-size:11.5px;color:#dc2626;font-weight:700;text-align:center;}
+.emp-ord{display:inline-flex;gap:3px;margin-left:auto;margin-right:6px;}
+.emp-ord-btn{width:28px;height:28px;padding:0;border:1.5px solid #e2e8f0;background:#fff;border-radius:7px;color:#64748b;font-size:11px;font-weight:900;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;}
+.emp-ord-btn:disabled{opacity:.3;cursor:default;}
 .st-share-hint{margin-top:7px;font-size:10px;color:#94a3b8;font-weight:600;text-align:center;line-height:1.5;}
 
 </style>
@@ -1040,7 +1043,7 @@ input:focus,select:focus,button:focus{outline:none;}
   </div>
 
   <div class="card">
-    <div class="card-h"><span class="card-t">직원 명단</span><span class="card-sub">시급·주휴 기준 개별 설정</span></div>
+    <div class="card-h"><span class="card-t">직원 명단</span><span class="card-sub">▲▼로 순서 변경 · 출근부에 반영</span></div>
     <div class="card-b" id="emp-list"></div>
   </div>
 
@@ -1604,6 +1607,25 @@ function setEmpTaxType(id, t){
   toast(emp.name+'님 신고 유형: '+(t==='freelance'?'3.3% 사업소득 (프리랜서)':'4대보험 (근로소득)'));
 }
 
+// ── 직원 순서 편집 (▲▼ 이동) ──
+function moveEmployee(id, dir){
+  const list = state.employees;
+  const idx = list.findIndex(function(e){ return e.id === id; });
+  if(idx < 0) return;
+  const retired = !!list[idx].retired;
+  // 같은 그룹(재직/퇴사) 안에서만 이동
+  let target = -1;
+  for(let i = idx + dir; i >= 0 && i < list.length; i += dir){
+    if(!!list[i].retired === retired){ target = i; break; }
+  }
+  if(target < 0) return;
+  const tmp = list[idx];
+  list[idx] = list[target];
+  list[target] = tmp;
+  save();
+  renderStaff();
+}
+
 function setEmpGrossNet(id, v){
   const emp = getEmp(id);
   if(!emp) return;
@@ -1703,8 +1725,10 @@ function renderStaff(){
     listEl.innerHTML = html;
     return;
   }
-  actives.forEach(function(e){
+  actives.forEach(function(e, ai){
     const color = empColor(e.id);
+    const upDis = ai === 0 ? ' disabled' : '';
+    const dnDis = ai === actives.length - 1 ? ' disabled' : '';
     let daysBtns = '';
     for(let d=2; d<=6; d++){
       daysBtns += '<button class="emp-mind-btn'+(e.minDays===d?' on':'')+'" onclick="setEmpMinDays(\''+e.id+'\','+d+')">'+d+'일</button>';
@@ -1713,6 +1737,8 @@ function renderStaff(){
       '<div class="emp-card-top">'+
         '<span class="emp-dot" style="background:'+color+'"></span>'+
         '<span class="emp-name">'+esc(e.name)+'</span>'+
+        '<span class="emp-ord"><button class="emp-ord-btn" onclick="moveEmployee(\''+e.id+'\',-1)"'+upDis+' title="위로">▲</button>'+
+        '<button class="emp-ord-btn" onclick="moveEmployee(\''+e.id+'\',1)"'+dnDis+' title="아래로">▼</button></span>'+
         '<button class="emp-del retire" onclick="retireEmployee(\''+e.id+'\')">퇴사</button>'+
       '</div>'+
       '<div class="emp-card-row">'+

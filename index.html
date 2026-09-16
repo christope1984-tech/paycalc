@@ -816,9 +816,10 @@ input:focus,select:focus,button:focus{outline:none;}
 .bk-note{margin-top:9px;font-size:10.5px;color:#94a3b8;font-weight:600;line-height:1.6;}
 .bk-note strong{color:#d97706;}
 .dp-status-row{display:flex;gap:6px;padding:0 12px 11px;}
-.dp-status-btn{flex:1;padding:8px 4px;background:#fff;border:1.5px dashed #cbd5e1;border-radius:8px;color:#64748b;font-size:11px;font-weight:700;cursor:pointer;}
+.dp-status-btn{flex:1;padding:8px 2px;font-size:10.5px;white-space:nowrap;background:#fff;border:1.5px dashed #cbd5e1;border-radius:8px;color:#64748b;font-weight:700;cursor:pointer;}
 .dp-status-btn.abs:active{border-color:#dc2626;color:#dc2626;}
 .dp-status-btn.pd:active{border-color:#059669;color:#059669;}
+.dp-status-btn.up{border-color:#fcd34d;color:#b45309;}
 .dp-status-btn.clear{width:100%;margin-top:8px;flex:none;border-style:solid;background:#f8fafc;}
 .dp-emp.absent{border-color:#fecaca;background:linear-gradient(180deg,#fef2f2 0%,#fff 40%);}
 .dp-emp.paid{border-color:#bbf7d0;background:linear-gradient(180deg,#f0fdf4 0%,#fff 40%);}
@@ -2000,7 +2001,7 @@ function importBackup(inputEl){
 // ══════════════════════════════════════════════════════════════
 function recH(rec){
   if(!rec) return 0;
-  if(rec.mode === 'absent' || rec.mode === 'paid') return 0;
+  if(rec.mode === 'absent' || rec.mode === 'paid' || rec.mode === 'unpaid') return 0;
   if(rec.mode === 'hours') return Math.max(0, (parseFloat(rec.hours) || 0) - (rec.brk || 0)/60);
   return calcDayH(rec.start, rec.end, rec.brk || 0);
 }
@@ -2149,12 +2150,14 @@ function renderDayPanel(){
   panelEmps.forEach(function(e){
     const rec = getRec(ds, e.id);
     const isAbsent = rec && rec.mode === 'absent';
+    const isUnpaid = rec && rec.mode === 'unpaid';
     const isPaid = rec && rec.mode === 'paid';
-    const working = !!rec && !isAbsent && !isPaid;
+    const working = !!rec && !isAbsent && !isPaid && !isUnpaid;
     const color = empColor(e.id);
     let sumTxt, sumCls = '';
     if(working){ sumTxt = Hfmt(recH(rec)); }
     else if(isAbsent){ sumTxt = '❌ 무단결근'; sumCls = ' absent'; }
+    else if(isUnpaid){ sumTxt = '🏖️ 무급휴가'; sumCls = ' absent'; }
     else if(isPaid){ sumTxt = '🌴 유급휴가 '+Hfmt(parseFloat(rec.hours)||0); sumCls = ' paid'; }
     else { sumTxt = ''; }
     html += '<div class="dp-emp'+(working?' work':'')+(isAbsent?' absent':'')+(isPaid?' paid':'')+'">'+
@@ -2168,11 +2171,17 @@ function renderDayPanel(){
       // 휴무: 결근/유급휴가 처리 버튼
       html += '<div class="dp-status-row">'+
         '<button class="dp-status-btn abs" onclick="setEmpStatus(\''+e.id+'\',\'absent\')">❌ 무단결근</button>'+
+        '<button class="dp-status-btn up" onclick="setEmpStatus(\''+e.id+'\',\'unpaid\')">🏖️ 무급휴가</button>'+
         '<button class="dp-status-btn pd" onclick="setEmpStatus(\''+e.id+'\',\'paid\')">🌴 유급휴가</button>'+
       '</div>';
     }else if(isAbsent){
       html += '<div class="dp-emp-body">'+
         '<div class="dp-hours-note" style="color:#dc2626">❌ 무단결근 — 이번 주 주휴수당이 발생하지 않습니다 (개근 상실)</div>'+
+        '<button class="dp-status-btn clear" onclick="setEmpStatus(\''+e.id+'\',\'off\')">휴무로 되돌리기</button>'+
+      '</div>';
+    }else if(isUnpaid){
+      html += '<div class="dp-emp-body">'+
+        '<div class="dp-hours-note" style="color:#b45309">🏖️ 무급휴가 (본인 요청 등) — 급여가 발생하지 않으며, <strong>개근 일수에 포함되지 않아</strong> 주휴 기준일수를 못 채우면 그 주 주휴수당이 발생하지 않습니다.</div>'+
         '<button class="dp-status-btn clear" onclick="setEmpStatus(\''+e.id+'\',\'off\')">휴무로 되돌리기</button>'+
       '</div>';
     }else if(isPaid){
@@ -2260,7 +2269,7 @@ function refreshAfterRecEdit(empId){
   const sumEl = document.querySelector('#day-panel [data-emp-sum="'+empId+'"]');
   if(sumEl && rec){
     if(rec.mode === 'paid') sumEl.textContent = '🌴 유급휴가 '+Hfmt(Math.max(0, parseFloat(rec.hours)||0));
-    else if(rec.mode !== 'absent') sumEl.textContent = Hfmt(recH(rec));
+    else if(rec.mode !== 'absent' && rec.mode !== 'unpaid') sumEl.textContent = Hfmt(recH(rec));
   }
 }
 function syncDayField(empId, field, val){
@@ -2272,10 +2281,10 @@ function toggleEmpWork(empId){
   const ds = state.selectedDate;
   if(!ds) return;
   const rec = getRec(ds, empId);
-  if(rec && (rec.mode === 'absent' || rec.mode === 'paid')){
+  if(rec && (rec.mode === 'absent' || rec.mode === 'paid' || rec.mode === 'unpaid')){
     // 결근/유급휴가 → 근무로 전환
     let last = lastRecBefore(empId, ds);
-    if(last && (last.mode === 'absent' || last.mode === 'paid')) last = null;
+    if(last && (last.mode === 'absent' || last.mode === 'paid' || last.mode === 'unpaid')) last = null;
     if(last && last.mode === 'hours' && state.fiveOrMore) last = null;
     setRec(ds, empId, last || { mode:'time', start:'09:00', end:'18:00', brk:60 });
     save(); renderCal();
@@ -2287,7 +2296,7 @@ function toggleEmpWork(empId){
     toast('휴무 처리됨');
   }else{
     let last = lastRecBefore(empId, ds);
-    if(last && (last.mode === 'absent' || last.mode === 'paid')) last = null;
+    if(last && (last.mode === 'absent' || last.mode === 'paid' || last.mode === 'unpaid')) last = null;
     if(last && last.mode === 'hours' && state.fiveOrMore) last = null;
     setRec(ds, empId, last || { mode:'time', start:'09:00', end:'18:00', brk:60 });
     toast(last ? '지난 근무와 동일하게 입력됨 (수정 가능)' : '출근 체크됨');
@@ -2304,6 +2313,9 @@ function setEmpStatus(empId, status){
   }else if(status === 'absent'){
     setRec(ds, empId, { mode:'absent' });
     toast('❌ 무단결근 처리 — 해당 주 주휴 미발생');
+  }else if(status === 'unpaid'){
+    setRec(ds, empId, { mode:'unpaid' });
+    toast('🏖️ 무급휴가 처리 — 급여 없음, 개근 일수에 미포함');
   }else if(status === 'paid'){
     setRec(ds, empId, { mode:'paid', hours: 8 });
     toast('🌴 유급휴가 처리 — 시간을 확인해주세요');
@@ -2856,6 +2868,9 @@ function renderStmtEmp(body, emp){
       if(rec.mode === 'absent'){
         timeTxt = '<span style="color:#dc2626;font-weight:800">무단결근</span>';
         brkTxt = '-'; totTxt = '-'; payTxt = '0원'; rowCls = ' absent';
+      }else if(rec.mode === 'unpaid'){
+        timeTxt = '<span style="color:#b45309;font-weight:800">무급휴가</span>';
+        brkTxt = '-'; totTxt = '-'; payTxt = '0원';
       }else if(rec.mode === 'paid'){
         const ph = Math.max(0, parseFloat(rec.hours)||0);
         timeTxt = '<span style="color:#059669;font-weight:800">유급휴가</span>';

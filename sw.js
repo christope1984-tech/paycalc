@@ -17,9 +17,9 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // 앱 화면: 인터넷 되면 새 버전, 안 되면 저장된 버전
+  // 앱 화면: 인터넷 되면 새 버전(브라우저 캐시 건너뛰고 서버 확인), 안 되면 저장된 버전
   if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).then(res => {
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then(res => {
       const copy = res.clone(); caches.open(CACHE).then(c => c.put('./index.html', copy)); return res;
     }).catch(() => caches.match('./index.html')));
     return;

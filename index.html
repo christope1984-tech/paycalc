@@ -280,7 +280,7 @@ select{min-height:46px;padding:0 10px;border-radius:10px;border:1px solid var(--
 .selbar .btn:disabled{opacity:.4;cursor:default}
 .trashLink{display:block;width:100%;margin:18px 0 6px;padding:12px;border:1px dashed var(--line);border-radius:10px;background:transparent;color:var(--muted);font-size:14px;cursor:pointer}
 .trashNote{margin:12px 2px 0;font-size:13.5px;color:var(--muted)}
-.filters[hidden],.selbar[hidden],.trashLink[hidden],.trashNote[hidden],.bar .btn[hidden],.selbar .btn[hidden],.bar .tool[hidden]{display:none}
+.filters[hidden],.selbar[hidden],.trashLink[hidden],.trashNote[hidden],.bar .btn[hidden],.selbar .btn[hidden],.bar .tool[hidden],#stUpd[hidden]{display:none}
 .tag{padding:1px 8px;border-radius:6px;background:var(--soft);font-size:12.5px}
 .st{padding:2px 9px;border-radius:6px;border:1px solid var(--line);font-size:12.5px;color:var(--muted);white-space:nowrap}
 .st.done{border-color:transparent;background:var(--accent-soft);color:var(--accent);font-weight:600}
@@ -551,6 +551,7 @@ table.it td:last-child{width:80px;text-align:right;white-space:nowrap}
       <div class="card" id="stData"><h3>데이터</h3>
         <p class="instWarn" id="stBkWarn" hidden></p>
         <p id="stInfo" style="white-space:pre-line;margin:0 0 12px;font-size:14.5px"></p>
+        <button class="btn primary" id="stUpd" hidden style="margin:0 0 12px">새 버전 받기</button>
         <p class="note-s" style="margin:0 0 12px">일지는 이 태블릿 브라우저에만 저장돼요. 브라우저 데이터를 지우거나 기기를 바꾸면 사라지니, 백업 파일을 주기적으로 저장해 두세요.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="stBackup">백업 파일 저장</button><button class="btn" id="stRestore">백업에서 불러오기</button><button class="btn" id="btnCsv">CSV로 내보내기</button></div>
         <input type="file" id="stFile" accept=".json,application/json" hidden>
@@ -2799,8 +2800,18 @@ $('#selPurge').addEventListener('click',async e=>{const b=e.currentTarget;if(!se
   delete b.dataset.arm;b.textContent='영구 삭제';const ids=[...sel];await dropCur(ids);
   try{await Store.removeMany(ids);sel=new Set();toast(`${ids.length}건을 완전히 지웠어요.`);if(!trash.size)leaveTrash();else renderList();}catch{toast('지우지 못했어요.');}});
 $('#trashOpen').addEventListener('click',async()=>{await Store.purgeOld().catch(()=>{});listMode='trash';sel=new Set();show('list');renderList();$('#view-list .scroll').scrollTop=0;});
+async function verCheck(){ // 설정의 '앱 버전' 줄에 깃허브에 올라가 있는 sw.js 버전을 같이 표시
+  const el=$('#stInfo'),b=$('#stUpd');let sv='',mine='';
+  try{mine=((await caches.keys()).find(x=>x.startsWith('sangdam-'))||'').replace('sangdam-','');}catch{}
+  try{const r=await fetch('./sw.js?t='+Date.now(),{cache:'no-store'});const m=(await r.text()).match(/sangdam-(v\d+)/);sv=m?m[1]:'';}catch{}
+  const line=!sv?`앱 버전: ${mine||'?'} (서버 확인 실패 — 인터넷 연결 확인)`:sv===mine?`앱 버전: ${mine} (최신)`:`앱 버전: ${mine||'?'} → 서버에는 ${sv}가 올라가 있어요`;
+  el.textContent=el.textContent.replace(/앱 버전: [^\n]*/,line);b.hidden=!sv||sv===mine;
+}
 function leaveTrash(){listMode='list';sel=null;renderList();const f=settingsFrom;openSettings().then(()=>{settingsFrom=f;});} // 휴지통은 설정에서 열었으니 설정으로
 $('#trBack').addEventListener('click',leaveTrash);
+$('#stUpd').addEventListener('click',async()=>{const b=$('#stUpd');b.disabled=true;b.textContent='받는 중…';
+  try{await flush();if(swReg)await swReg.update();}catch{}
+  setTimeout(()=>location.reload(),1500);});
 $('#q').addEventListener('input',e=>{listFilter.q=e.target.value;renderList();});
 $('#fMonth').addEventListener('change',e=>{listFilter.month=e.target.value;renderList();});
 $('#fStatus').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;listFilter.status=t.dataset.v;
@@ -2894,9 +2905,9 @@ async function openSettings(){settingsFrom=!$('#view-sheet').hidden&&cur?'sheet'
   let info=`저장된 일지 ${logs.size}건`;
   try{const e=await navigator.storage.estimate();info+=` / 사용 ${(e.usage/1048576).toFixed(1)}MB`;}catch{}
   try{const p=await navigator.storage.persisted();info+=p?' / 자동 삭제 방지 켜짐':' / 자동 삭제 방지 꺼짐 (홈 화면 앱으로 설치하면 켜져요)';}catch{}
-  try{const k=(await caches.keys()).find(x=>x.startsWith('sangdam-'));if(k)info+='\n앱 버전: '+k.replace('sangdam-','');}catch{}
+  try{const k=(await caches.keys()).filter(x=>x.startsWith('sangdam-')).map(x=>x.replace('sangdam-','')).join(', ');if(k)info+='\n앱 버전: '+k+'  (서버 확인 중…)';}catch{}
   info+='\n마지막 백업: '+(settings.lastBackup?new Date(settings.lastBackup).toLocaleString('ko-KR'):'없음');
-  $('#stInfo').textContent=info;
+  $('#stInfo').textContent=info;verCheck();
   $('#stTrashInfo').textContent=trash.size?`휴지통에 ${trash.size}건 있어요.`:'휴지통이 비어 있어요.';$('#trashOpen').disabled=!trash.size;
   const bw=$('#stBkWarn'),lb=settings.lastBackup;
   bw.textContent=!lb?(logs.size?'아직 백업한 적이 없어요. 아래 \'백업 파일 저장\'을 한 번 눌러 두세요.':''):Date.now()-lb>14*864e5?'마지막 백업 후 2주가 지났어요. 백업 파일을 새로 저장해 두세요.':'';
@@ -3080,7 +3091,16 @@ buildPanel();syncTools();applyListTitle();
   Store.purgeOld().catch(()=>{});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)Store.purgeOld().catch(()=>{});});
 })();
-if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
+/* 서비스워커: 열 때·돌아올 때마다 sw.js를 서버에서 새로 확인(브라우저 캐시 안 씀). 새 버전이 넘어오면 목록 화면일 때 바로 새로고침 */
+let swReg=null;
+if('serviceWorker'in navigator&&location.protocol==='https:'){
+  navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(r=>{swReg=r;r.update().catch(()=>{});}).catch(()=>{});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&swReg)swReg.update().catch(()=>{});});
+  const hadCtl=!!navigator.serviceWorker.controller;let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!hadCtl||reloaded)return;
+    if(!$('#view-list').hidden||!$('#view-settings').hidden){reloaded=true;flush().finally(()=>location.reload());}
+    else toast('새 버전을 받았어요. 목록으로 나갔다가 앱을 다시 열면 적용돼요.');});
+}
 </script>
 </body>
 </html>
